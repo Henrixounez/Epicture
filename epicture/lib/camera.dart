@@ -111,7 +111,7 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
                 padding: EdgeInsets.all(20.0),
                 child: FloatingActionButton(
                   backgroundColor: Colors.white,
-                  child: Icon(Icons.camera),
+                  child: Icon(Icons.camera, color: Colors.grey,),
                   onPressed: controller != null &&
                   controller.value.isInitialized &&
                   !controller.value.isRecordingVideo

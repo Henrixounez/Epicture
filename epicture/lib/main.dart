@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:camera/camera.dart';
 import 'package:epicture/search.dart';
 import 'package:flutter/material.dart';
 import 'camera.dart';
-
+import 'search.dart';
+import 'home.dart';
 
 Future<void> main() async {
   // Fetch the available cameras before initializing the app.
@@ -35,33 +35,78 @@ class MyApp extends StatelessWidget {
         // or simply save your changes to "hot reload" in a Flutter IDE).
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
-        primarySwatch: Colors.grey,
+        primarySwatch: Colors.blue,
       ),
-        home: HomePage(),
-//      home: MyHomePage(title: 'Flutter Demo Home Page'),
+        home: MainPage(),
+//      home: MyMainPage(title: 'Flutter Demo Home Page'),
     );
   }
 }
 
-class HomePage extends StatefulWidget {
+class MainPage extends StatefulWidget {
   @override
-  _HomePageState createState() => _HomePageState();
+  _MainPageState createState() => _MainPageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  
+class _MainPageState extends State<MainPage> {
+  int selectedIndex = 0;
+
+  PageController pageController = PageController(
+    initialPage: 0,
+    keepPage: true,
+  );
+
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return Scaffold(
       body: PageView(
+        controller: pageController,
+        onPageChanged: (index) {
+          pageChanged(index);
+        },
         children: <Widget>[
+          HomePage(),
           SearchPage(),
           CameraExampleHome(),
         ],
-      )
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        selectedItemColor: Colors.blue,
+        currentIndex: selectedIndex,
+        onTap: (index) {
+          bottomTapped(index);
+        },
+        items: <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            title: Text('Home')
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search),
+            title: Text('Search')
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.camera_alt),
+            title: Text('Picture')
+          )
+        ]
+      ),
     );
   }
+
+  void pageChanged(int index) {
+    setState(() {
+      selectedIndex = index;
+    });
+  }
+  
+  void bottomTapped(int index) {
+    setState(() {
+      selectedIndex = index;
+      pageController.animateToPage(index, duration: Duration(milliseconds: 500), curve: Curves.ease);
+    });
+  }
+  
 }
 
 //class MyHomePage extends StatefulWidget {
