@@ -1,3 +1,4 @@
+import 'package:epicture/colors.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -10,9 +11,7 @@ class _SearchPage extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Search'),
-      ),
+      backgroundColor: colorBackground,
       body: Column(
         children: <Widget>[
           Text('Lol')
