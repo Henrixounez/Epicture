@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -6,9 +5,13 @@ import 'package:epicture/colors.dart';
 import 'package:epicture/connection.dart';
 import 'package:epicture/image.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+
+var global_access_token = "";
+var global_client_id = "a14de0322afe7eb";
 
 class HomePage extends StatefulWidget {
   @override
@@ -32,24 +35,29 @@ class _HomePageState extends State<HomePage> {
     final prefs = await SharedPreferences.getInstance();
     final name = prefs.getString('account_username');
     final access_token = prefs.getString('access_token');
+    global_access_token = access_token;
     if (name == null) {
       return;
     }
-    var response = await http.get(
-      'https://api.imgur.com/3/account/me/images',
-      headers: {HttpHeaders.authorizationHeader: "Bearer $access_token"},
-    );
-    var data = jsonDecode(response.body);
-    var images = data["data"];
     setState(() {
       _is_connected = true;
       _username = name;
       _account_id = prefs.getString('account_id');
       _access_token = prefs.getString('access_token');
+    });
+    _refresh();
+  }
+
+  Future<Null> _refresh() async {
+    var response = await http.get(
+      'https://api.imgur.com/3/account/me/images',
+      headers: {HttpHeaders.authorizationHeader: "Bearer $_access_token"},
+    );
+    var data = jsonDecode(response.body);
+    var images = data["data"];
+    setState(() {
       _images = images;
     });
-    print(images);
-    print(_images[0]['link']);
   }
 
   @override
@@ -60,11 +68,15 @@ class _HomePageState extends State<HomePage> {
         body: Column(
           children: <Widget>[
             Expanded(
-              child: ListView.builder(
-                itemCount: _images.length,
-                itemBuilder: (BuildContext ctx, int index) {
-                  return ImgurImage(data: _images[index]);
-                },
+              child: RefreshIndicator(
+                child: ListView.builder(
+                  itemCount: _images.length,
+                  itemBuilder: (BuildContext ctx, int index) {
+                    return ImgurImage(key: ValueKey(index),data: _images[index]);
+                  },
+                  addAutomaticKeepAlives: true,
+                ),
+                onRefresh: _refresh
               )
             )
           ],

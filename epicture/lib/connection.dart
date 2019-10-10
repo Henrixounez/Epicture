@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:epicture/colors.dart';
+import 'package:epicture/home.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,8 +17,7 @@ class ConnectionPage extends StatefulWidget {
 }
 
 class _ConnectionPageState extends State<ConnectionPage> {
-  static String client_id = "a14de0322afe7eb";
-  static String url = 'https://api.imgur.com/oauth2/authorize?client_id=$client_id&response_type=token&state=login_token';
+  static String url = 'https://api.imgur.com/oauth2/authorize?client_id=$global_client_id&response_type=token&state=login_token';
   StreamSubscription _sub;
 
   @override

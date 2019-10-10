@@ -17,3 +17,5 @@ Map<int, Color> ColorMap =
 
 MaterialColor materialcolorBackground = MaterialColor(0xFF34373C, ColorMap);
 Color colorBackground = Color(0xFF34373C);
+
+Color colorMetrics = Color(0xFFD2D2D2);
