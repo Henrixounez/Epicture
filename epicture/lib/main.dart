@@ -7,28 +7,49 @@ import 'package:flutter/material.dart';
 import 'camera.dart';
 import 'search.dart';
 import 'home.dart';
+import 'package:timeago/timeago.dart' as timeago;
+import 'package:timeago/src/messages/lookupmessages.dart';
+
+class CustomMessages implements LookupMessages {
+  String prefixAgo() => '';
+  String prefixFromNow() => '';
+  String suffixAgo() => '';
+  String suffixFromNow() => '';
+  String lessThanOneMinute(int seconds) => 'now';
+  String aboutAMinute(int minutes) => '1min';
+  String minutes(int minutes) => '${minutes}min';
+  String aboutAnHour(int minutes) => '~1h';
+  String hours(int hours) => '${hours}h';
+  String aDay(int hours) => '~1d';
+  String days(int days) => '${days}d';
+  String aboutAMonth(int days) => '~1mo';
+  String months(int months) => '$months mo';
+  String aboutAYear(int year) => '~1y';
+  String years(int years) => '${years}y';
+  String wordSeparator() => ' ';
+}
+
 
 Future<void> main() async {
-  // Fetch the available cameras before initializing the app.
   try {
     WidgetsFlutterBinding.ensureInitialized();
     cameras = await availableCameras();
   } on CameraException catch (e) {
     print('Error');
   }
+  timeago.setLocaleMessages('en_short', CustomMessages());
   runApp(MyApp());
 }
-//void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Epicture',
       theme: ThemeData(
         primarySwatch: materialcolorBackground,
-        backgroundColor: materialcolorBackground
+        backgroundColor: materialcolorBackground,
+        accentColor: Colors.white
       ),
         home: MainPage(),
     );

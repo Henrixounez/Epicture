@@ -65,21 +65,28 @@ class _HomePageState extends State<HomePage> {
     if (_is_connected) {
       return Scaffold(
         backgroundColor: colorBackground,
-        body: Column(
-          children: <Widget>[
-            Expanded(
-              child: RefreshIndicator(
-                child: ListView.builder(
-                  itemCount: _images.length,
-                  itemBuilder: (BuildContext ctx, int index) {
-                    return ImgurImage(key: ValueKey(index),data: _images[index]);
-                  },
-                  addAutomaticKeepAlives: true,
-                ),
-                onRefresh: _refresh
-              )
-            )
-          ],
+        body: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: _refresh,
+            child: CustomScrollView(
+              cacheExtent: 1000,
+              scrollDirection: Axis.vertical,
+              slivers: <Widget>[
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (BuildContext context, int index) {
+                      return ImgurImage(
+                        key: ValueKey(index),
+                        data: _images[index],
+                      );
+                    },
+                    childCount: _images.length,
+                    addAutomaticKeepAlives: true,
+                  ),
+                )
+              ],
+            ),
+          )
         )
       );
     } else {

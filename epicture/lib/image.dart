@@ -6,6 +6,7 @@ import 'package:epicture/home.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:timeago/timeago.dart' as timeago;
 
 class ImgurImage extends StatefulWidget {
   const ImgurImage({Key key, @required this.data}) : super(key: key);
@@ -14,12 +15,11 @@ class ImgurImage extends StatefulWidget {
   _ImgurImageState createState() => _ImgurImageState();
 }
 
-class _ImgurImageState extends State<ImgurImage> with AutomaticKeepAliveClientMixin<ImgurImage> {
+class _ImgurImageState extends State<ImgurImage> {
   var data = {};
   Future<String> avatar_url;
   Future<String> img_url;
   bool got_avatar = false;
-  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -35,15 +35,18 @@ class _ImgurImageState extends State<ImgurImage> with AutomaticKeepAliveClientMi
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
-    var title = getTitle();
-
-    if (widget.data != data) {
-      data = widget.data;
+    if (widget.data['id']!= data['id']) {
+      setState(() {
+        data = widget.data;
+        avatar_url = getAvatar();
+        img_url = getImg();
+      });
     }
     if (data['link'] == null) {
       return Text('Loading');
     }
+    var title = getTitle();
+    var username = data['account_url'] != null ? data['account_url'] : 'unknown';
     return Container(
       decoration: BoxDecoration(
         color: Color.fromRGBO(52, 55, 60, 1),
@@ -84,8 +87,8 @@ class _ImgurImageState extends State<ImgurImage> with AutomaticKeepAliveClientMi
                             textAlign: TextAlign.left,
                           ),
                           Text(
-                            data['account_url'],
-                            style: TextStyle(color: Colors.white),
+                            username + ' • ' + get_timeago() + get_section(),
+                            style: TextStyle(color: Colors.white70),
                             textAlign: TextAlign.left,
                           ),
                         ],
@@ -109,13 +112,16 @@ class _ImgurImageState extends State<ImgurImage> with AutomaticKeepAliveClientMi
           ),
           Column(
             children: <Widget>[
-              Row(
-                children: <Widget>[
-                  metric(data['views'], Icons.remove_red_eye),
-                  metric(data['ups'], Icons.keyboard_arrow_up),
-                  metric(data['downs'], Icons.keyboard_arrow_down),
-                ],
-              )
+              Container(
+                padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                child: Row(
+                  children: <Widget>[
+                    metric(data['views'], Icons.remove_red_eye),
+                    metric(data['ups'], Icons.keyboard_arrow_up),
+                    metric(data['downs'], Icons.keyboard_arrow_down),
+                  ],
+                ),
+              ),
             ],
           ),
           Divider(
@@ -127,16 +133,19 @@ class _ImgurImageState extends State<ImgurImage> with AutomaticKeepAliveClientMi
   }
 
   String getTitle() {
-    if (data['description'] != null) {
-      return data['description'];
-    }
     if (data['title'] != null) {
       return data['title'];
     }
-    return '';
+    if (data['description'] != null) {
+      return data['description'];
+    }
+    return ' ';
   }
 
   Future<String> getAvatar() async {
+    if (widget.data['account_url'] == null) {
+      return '';
+    }
     var response = await http.get(
       'https://api.imgur.com/3/account/${widget.data['account_url']}/avatar',
       headers: {HttpHeaders.authorizationHeader: "Bearer $global_access_token"},
@@ -149,16 +158,12 @@ class _ImgurImageState extends State<ImgurImage> with AutomaticKeepAliveClientMi
   }
 
   Future<String> getImg() async {
-    String client_id = "a14de0322afe7eb";
-    if (!widget.data['link'].toString().endsWith('.png')) {
-//      var hash = widget.data['link'].toString().substring(widget.data['link'].toString().lastIndexOf('/') + 1);
-//      print(hash);
-//      print(widget.data);
-//      print('https://api.imgur.com/3/image/$hash');
+    var link = widget.data['link'].toString();
+    if (!(link.endsWith('.png') || link.endsWith('.jpg') || link.endsWith('.gif'))) {
       var hash = widget.data['cover'];
       var response = await http.get(
         'https://api.imgur.com/3/image/$hash',
-        headers: {HttpHeaders.authorizationHeader: "Client-ID $client_id"},
+        headers: {HttpHeaders.authorizationHeader: "Client-ID $global_client_id"},
       );
       var data = jsonDecode(response.body)['data'];
       return data['link'];
@@ -167,16 +172,35 @@ class _ImgurImageState extends State<ImgurImage> with AutomaticKeepAliveClientMi
     }
   }
 
+  String get_timeago() {
+    final startTime = DateTime.fromMillisecondsSinceEpoch(data['datetime'] * 1000);
+    final now = DateTime.now();
+    final diff = now.difference(startTime);
+    final time = timeago.format(now.subtract(diff), locale: 'en_short');
+    return time;
+  }
+
+  String get_section() {
+    if (data['section'] != null && data['section'] != '')
+      return (' / ' + data['section']);
+    else
+      return '';
+  }
+
   Widget metric(int nb, IconData icon) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-      child: Row(
-        children: <Widget>[
-          Icon(icon, color: colorMetrics,),
-          VerticalDivider(width: 5,),
-          Text('$nb', style: TextStyle(color: colorMetrics),)
-        ],
-      ),
-    );
+    if (nb != null) {
+      return Expanded(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Icon(icon, color: colorMetrics,),
+            VerticalDivider(width: 5,),
+            Text('$nb', style: TextStyle(color: colorMetrics),)
+          ],
+        )
+      );
+    } else {
+      return Spacer();
+    }
   }
 }
