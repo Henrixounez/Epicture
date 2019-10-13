@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 // 34373C
-Map<int, Color> ColorMap =
+const Map<int, Color> ColorMap =
 {
   50: Color.fromRGBO(0, 0, 0, 0.1),
   100: Color.fromRGBO(0, 0, 0, 0.2),
@@ -17,5 +17,11 @@ Map<int, Color> ColorMap =
 
 MaterialColor materialcolorBackground = MaterialColor(0xFF34373C, ColorMap);
 Color colorBackground = Color(0xFF34373C);
+Color colorBottomAppBar = Color(0xFF44474C);
+Color colorMiddle = Color(0xFF54575C);
+Color colorGreen = Color(0xFF1CB76D);
 
+Color colorText = Colors.white;
+Color colorFadedText = Colors.white70;
 Color colorMetrics = Color(0xFFD2D2D2);
+Color colorFavorite = Colors.red;

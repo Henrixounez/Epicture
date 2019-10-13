@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:camera/camera.dart';
 import 'package:epicture/colors.dart';
 import 'package:epicture/search.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'camera.dart';
 import 'search.dart';
@@ -29,13 +30,12 @@ class CustomMessages implements LookupMessages {
   String wordSeparator() => ' ';
 }
 
-
 Future<void> main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
     cameras = await availableCameras();
   } on CameraException catch (e) {
-    print('Error');
+    print('Error $e');
   }
   timeago.setLocaleMessages('en_short', CustomMessages());
   runApp(MyApp());
@@ -49,7 +49,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: materialcolorBackground,
         backgroundColor: materialcolorBackground,
-        accentColor: Colors.white
+        accentColor: colorText,
       ),
         home: MainPage(),
     );
@@ -83,26 +83,29 @@ class _MainPageState extends State<MainPage> {
           CameraExampleHome(),
         ],
       ),
+
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: colorBackground,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.white70,
+        backgroundColor: colorBottomAppBar,
+        selectedItemColor: colorText,
+        unselectedItemColor: colorFadedText,
         currentIndex: selectedIndex,
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
         onTap: (index) {
           bottomTapped(index);
         },
         items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
               icon: Icon(Icons.home),
-              title: Text('Home')
+              title: Text('')
           ),
           BottomNavigationBarItem(
               icon: Icon(Icons.search),
-              title: Text('Search')
+              title: Text('')
           ),
           BottomNavigationBarItem(
               icon: Icon(Icons.camera_alt),
-              title: Text('Picture')
+              title: Text('')
           )
         ]
       ),

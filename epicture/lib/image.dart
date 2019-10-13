@@ -17,16 +17,16 @@ class ImgurImage extends StatefulWidget {
 
 class _ImgurImageState extends State<ImgurImage> {
   var data = {};
-  Future<String> avatar_url;
-  Future<String> img_url;
-  bool got_avatar = false;
+  Future<String> avatarUrl;
+  Future<String> imgUrl;
+  bool gotAvatar = false;
 
   @override
   void initState() {
     super.initState();
-    if (!got_avatar) {
-      avatar_url = getAvatar();
-      img_url = getImg();
+    if (!gotAvatar) {
+      avatarUrl = getAvatar();
+      imgUrl = getImg();
     }
     setState(() {
         data = widget.data;
@@ -38,8 +38,8 @@ class _ImgurImageState extends State<ImgurImage> {
     if (widget.data['id']!= data['id']) {
       setState(() {
         data = widget.data;
-        avatar_url = getAvatar();
-        img_url = getImg();
+        avatarUrl = getAvatar();
+        imgUrl = getImg();
       });
     }
     if (data['link'] == null) {
@@ -60,7 +60,7 @@ class _ImgurImageState extends State<ImgurImage> {
                 Row(
                   children: <Widget>[
                     FutureBuilder(
-                      future: avatar_url,
+                      future: avatarUrl,
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.done) {
                           return ClipRRect(
@@ -83,16 +83,23 @@ class _ImgurImageState extends State<ImgurImage> {
                         children: <Widget>[
                           Text(
                             title,
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+                            style: TextStyle(color: colorText, fontWeight: FontWeight.w800, fontSize: 15),
                             textAlign: TextAlign.left,
                           ),
                           Text(
-                            username + ' • ' + get_timeago() + get_section(),
-                            style: TextStyle(color: Colors.white70),
+                            username + ' • ' + getTimeago() + getSection(),
+                            style: TextStyle(color: colorFadedText),
                             textAlign: TextAlign.left,
                           ),
                         ],
                       )
+                    ),
+                    FloatingActionButton(
+                      heroTag: null,
+                      elevation: 0,
+                      backgroundColor: colorBackground,
+                      onPressed: _favImage,
+                      child: data['favorite'] ? Icon(Icons.favorite, color: colorFavorite,) : Icon(Icons.favorite_border, color: colorMetrics,),
                     )
                   ],
                 ),
@@ -101,12 +108,34 @@ class _ImgurImageState extends State<ImgurImage> {
             )
           ),
           FutureBuilder(
-            future: img_url,
+            future: imgUrl,
             builder: (context, snapshot) {
+              var width = data['width'];
+              var height = data['height'];
+              if (width == null || height == null) {
+                width = data['cover_width'];
+                height = data['cover_height'];
+              }
+              var neededHeight = height / (width / MediaQuery.of(context).size.width);
+              if (width < MediaQuery.of(context).size.width)
+                neededHeight = height.toDouble();
               if (snapshot.connectionState == ConnectionState.done && snapshot.data != null) {
-                return Image.network(snapshot.data);
+                if (!snapshot.data.toString().endsWith('.mp4')) {
+                  return Container(
+                    height: neededHeight,
+                    child: Image.network(snapshot.data),
+                  );
+                } else {
+                  return Container(
+                    height: neededHeight,
+                    child: Icon(Icons.play_circle_outline, color: colorText, size: 50,)
+                  );
+                }
               } else {
-                return CircularProgressIndicator();
+                return Container(
+                  height: neededHeight,
+                  child: Center(child: CircularProgressIndicator())
+                );
               }
             },
           ),
@@ -132,6 +161,22 @@ class _ImgurImageState extends State<ImgurImage> {
     );
   }
 
+  void _favImage() async {
+    var hash = data['id'];
+
+    if (data['is_album']) {
+      await http.post('https://api.imgur.com/3/album/$hash/favorite',
+      headers: {HttpHeaders.authorizationHeader: 'Bearer $globalAccessToken'});
+    } else {
+      hash = data['cover'];
+      await http.post('https://api.imgur.com/3/image/$hash/favorite',
+      headers: {HttpHeaders.authorizationHeader: 'Bearer $globalAccessToken'});
+    }
+    setState(() {
+      data['favorite'] = !data['favorite'];
+    });
+  }
+
   String getTitle() {
     if (data['title'] != null) {
       return data['title'];
@@ -148,11 +193,11 @@ class _ImgurImageState extends State<ImgurImage> {
     }
     var response = await http.get(
       'https://api.imgur.com/3/account/${widget.data['account_url']}/avatar',
-      headers: {HttpHeaders.authorizationHeader: "Bearer $global_access_token"},
+      headers: {HttpHeaders.authorizationHeader: "Bearer $globalAccessToken"},
     );
     var data = jsonDecode(response.body)['data'];
     setState(() {
-      got_avatar = true;
+      gotAvatar = true;
     });
     return data['avatar'];
   }
@@ -163,7 +208,7 @@ class _ImgurImageState extends State<ImgurImage> {
       var hash = widget.data['cover'];
       var response = await http.get(
         'https://api.imgur.com/3/image/$hash',
-        headers: {HttpHeaders.authorizationHeader: "Client-ID $global_client_id"},
+        headers: {HttpHeaders.authorizationHeader: "Client-ID $globalClientId"},
       );
       var data = jsonDecode(response.body)['data'];
       return data['link'];
@@ -172,7 +217,9 @@ class _ImgurImageState extends State<ImgurImage> {
     }
   }
 
-  String get_timeago() {
+  String getTimeago() {
+    if (data['datetime'] == null)
+      return '';
     final startTime = DateTime.fromMillisecondsSinceEpoch(data['datetime'] * 1000);
     final now = DateTime.now();
     final diff = now.difference(startTime);
@@ -180,7 +227,7 @@ class _ImgurImageState extends State<ImgurImage> {
     return time;
   }
 
-  String get_section() {
+  String getSection() {
     if (data['section'] != null && data['section'] != '')
       return (' / ' + data['section']);
     else

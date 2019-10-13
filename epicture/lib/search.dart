@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:epicture/colors.dart';
+import 'package:epicture/pictureList.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:epicture/image.dart';
 import 'package:http/http.dart' as http;
 import 'home.dart';
 
@@ -17,11 +17,10 @@ class _SearchPage extends State<SearchPage> {
   final TextEditingController _filter = new TextEditingController();
   FocusNode _focusNode;
   ScrollController _scrollController;
-  Widget _appBarTitle = Text('Search on Imgur');
-  var _timeOpacity = 0.0;
+  var _timeOpacity = 1.0;
   var _images = [];
-  var _values = ['top', 'all', '1'];
-  var _lastSearch = ['top', 'all', '1', ''];
+  var _values = ['top', 'week', '0'];
+  var _lastSearch = ['top', 'week', '0', ''];
 
   @override
   void initState() {
@@ -42,18 +41,19 @@ class _SearchPage extends State<SearchPage> {
                 await _scrollController.animateTo(0.0, duration: Duration(milliseconds: 500), curve: Curves.easeOut);
                 _search();
               },
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: colorText),
               controller: _filter,
-              cursorColor: Colors.white,
+              cursorColor: colorText,
               decoration: InputDecoration(
-                  prefixIcon: Icon(Icons.search, color: Colors.white,),
+                  prefixIcon: Icon(Icons.search, color: colorText,),
                 hintText: 'Search...',
-                hintStyle: TextStyle(color: Colors.white),
+                hintStyle: TextStyle(color: colorText),
               ),
             ),
           ),
       ),
       body: RefreshIndicator(
+        color: colorBackground,
         onRefresh: _search,
         child: CustomScrollView(
           cacheExtent: 1000,
@@ -72,18 +72,7 @@ class _SearchPage extends State<SearchPage> {
                 ],
               ),
             ),
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (BuildContext context, int index) {
-                  return ImgurImage(
-                    key: ValueKey(index),
-                    data: _images[index],
-                  );
-                },
-                childCount: _images.length,
-                addAutomaticKeepAlives: true,
-              ),
-            ),
+            PictureList(pictures: _images,),
           ]
         ),
       ),
@@ -97,7 +86,7 @@ class _SearchPage extends State<SearchPage> {
           value: _values[index],
           icon: Icon(Icons.arrow_downward),
           style: TextStyle(
-              color: Colors.white,
+              color: colorText,
               fontSize: 15
           ),
           onChanged: (String newValue) {
@@ -132,7 +121,7 @@ class _SearchPage extends State<SearchPage> {
       return;
     var response = await http.get(
       'https://api.imgur.com/3/gallery/search/${_values[0]}/${_values[1]}/${_values[2]}?q=${_filter.text}',
-      headers: {HttpHeaders.authorizationHeader: "Client-ID $global_client_id"}
+      headers: {HttpHeaders.authorizationHeader: "Client-ID $globalClientId"}
     );
     var data = jsonDecode(response.body)['data'];
     setState(() {

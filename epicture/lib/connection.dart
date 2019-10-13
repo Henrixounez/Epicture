@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:epicture/colors.dart';
 import 'package:epicture/home.dart';
@@ -17,7 +16,7 @@ class ConnectionPage extends StatefulWidget {
 }
 
 class _ConnectionPageState extends State<ConnectionPage> {
-  static String url = 'https://api.imgur.com/oauth2/authorize?client_id=$global_client_id&response_type=token&state=login_token';
+  static String url = 'https://api.imgur.com/oauth2/authorize?client_id=$globalClientId&response_type=token&state=login_token';
   StreamSubscription _sub;
 
   @override
@@ -37,7 +36,7 @@ class _ConnectionPageState extends State<ConnectionPage> {
     await initUniLinks();
   }
 
-  void get_link(String url) async {
+  Future<void> getLink(String url) async {
     url = url.replaceFirst('#', '&');
     Uri uri = Uri.parse(url);
     final prefs = await SharedPreferences.getInstance();
@@ -52,13 +51,13 @@ class _ConnectionPageState extends State<ConnectionPage> {
     try {
       String initialLink = await getInitialLink();
       if (initialLink != null) {
-        await get_link(initialLink);
+        await getLink(initialLink);
       }
     } on PlatformException {
       return;
     }
     _sub = getLinksStream().listen((String link) async {
-      await get_link(link);
+      await getLink(link);
     }, onError: (err) {
       print(err);
     });
@@ -69,12 +68,19 @@ class _ConnectionPageState extends State<ConnectionPage> {
     return Scaffold(
       backgroundColor: colorBackground,
       body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
-          RaisedButton(
-            child: Text('Login on Imgur !'),
-            onPressed: () async {
-              launch(url);
-            },
+          Center(
+            child: RaisedButton(
+              color: colorGreen,
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text('Login on Imgur !', style: TextStyle(color: colorText, fontSize: 30),),
+              ),
+              onPressed: () async {
+                launch(url);
+              },
+            ),
           )
         ],
       )
