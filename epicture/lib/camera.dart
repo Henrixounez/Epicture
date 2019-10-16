@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 
 import 'package:camera/camera.dart';
 import 'package:path_provider/path_provider.dart';
-
+import 'editor.dart';
 
 List<CameraDescription> cameras;
 
 class CameraExampleHome extends StatefulWidget {
   @override
-  _CameraExampleHomeState createState() => _CameraExampleHomeState();
+  CameraExampleHomeState createState() => CameraExampleHomeState();
 }
 
 /// Returns a suitable camera icon for [direction].
@@ -29,10 +29,14 @@ IconData getCameraLensIcon(CameraLensDirection direction) {
 void logError(String code, String message) =>
     print('Error: $code\nError Message: $message');
 
-class _CameraExampleHomeState extends State<CameraExampleHome>
+class CameraExampleHomeState extends State<CameraExampleHome>
     with WidgetsBindingObserver {
   CameraController controller;
+  CameraDescription actualCamera;
+  CameraDescription frontCamera;
+  CameraDescription backCamera;
   String imagePath;
+  String oldImagePath;
   String videoPath;
   VoidCallback videoPlayerListener;
   bool enableAudio = true;
@@ -44,6 +48,10 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
     for (CameraDescription cameraDescription in cameras) {
       if (cameraDescription.lensDirection == CameraLensDirection.back) {
         onNewCameraSelected(cameraDescription);
+        actualCamera = cameraDescription;
+        backCamera = cameraDescription;
+      } else if (cameraDescription.lensDirection == CameraLensDirection.front) {
+        frontCamera = cameraDescription;
       }
     }
   }
@@ -73,56 +81,81 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
-      key: _scaffoldKey,
-      body: Stack(
-        children: <Widget>[
-          Column(
-            children: <Widget>[
-              Expanded(
-                child: Container(
-                  child: Center(
-                    child: _cameraPreviewWidget(),
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                  ),
+        body: Stack(
+      children: <Widget>[
+        Column(
+          children: <Widget>[
+            Expanded(
+              child: Container(
+                child: Center(
+                  child: _cameraPreviewWidget(),
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black,
                 ),
               ),
-//          _captureControlRowWidget(),
-//          _toggleAudioWidget(),
-//          Padding(
-//            padding: const EdgeInsets.all(5.0),
-//            child: Row(
-//              mainAxisAlignment: MainAxisAlignment.start,
-//              children: <Widget>[
-//                _cameraTogglesRowWidget(),
-//                _thumbnailWidget(),
-//              ],
-//            ),
-//          ),
-            ],
-          ),
-          Positioned(
-            child: Align(
-              alignment: FractionalOffset.bottomCenter,
-              child: Container(
-                padding: EdgeInsets.all(20.0),
+            ),
+          ],
+        ),
+        Positioned(
+          child: Align(
+            alignment: FractionalOffset.bottomLeft,
+            child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 30.0, vertical: 20.0),
                 child: FloatingActionButton(
+                  heroTag: "widgetHero",
                   backgroundColor: Colors.white,
-                  child: Icon(Icons.camera, color: Colors.grey,),
+                  child: _thumbnailWidget(),
                   onPressed: controller != null &&
-                  controller.value.isInitialized &&
-                  !controller.value.isRecordingVideo
-                  ? onTakePictureButtonPressed
+                          controller.value.isInitialized &&
+                          !controller.value.isRecordingVideo
+                      ? onWidgetPreviewButtonPressed
                       : null,
-                )
-              )
-            )
-          )
-        ],
-      )
+                )),
+          ),
+        ),
+        Positioned(
+            child: Align(
+                alignment: FractionalOffset.bottomCenter,
+                child: Container(
+                    padding: EdgeInsets.all(20.0),
+                    child: FloatingActionButton(
+                      heroTag: "pictureButtonHero",
+                      backgroundColor: Colors.white,
+                      child: Icon(
+                        Icons.camera,
+                        color: Colors.grey,
+                      ),
+                      onPressed: controller != null &&
+                              controller.value.isInitialized &&
+                              !controller.value.isRecordingVideo
+                          ? onTakePictureButtonPressed
+                          : null,
+                    )))),
+        Positioned(
+          child: Align(
+            alignment: FractionalOffset.bottomRight,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 30.0, vertical: 20.0),
+              child: FloatingActionButton(
+                heroTag: "changeCameraHero",
+                backgroundColor: Colors.white,
+                child: Icon(
+                  Icons.switch_camera,
+                  color: Colors.grey,
+                ),
+                onPressed: controller != null &&
+                        controller.value.isInitialized &&
+                        !controller.value.isRecordingPaused
+                    ? onCameraSwitchButtonPressed
+                    : null,
+              ),
+            ),
+          ),
+        )
+      ],
+    )
 //      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 //      floatingActionButton: FloatingActionButton(
 //        child: Icon(Icons.camera),
@@ -145,7 +178,7 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
 //          ],
 //        ),
 //      ),
-    );
+        );
   }
 
   /// Display the preview from the camera (or a message if the preview is not available).
@@ -170,38 +203,19 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
     }
   }
 
-  /// Toggle recording audio
-  Widget _toggleAudioWidget() {
-    return Padding(
-      padding: const EdgeInsets.only(left: 25),
-      child: Row(
-        children: <Widget>[
-          const Text('Enable Audio:'),
-          Switch(
-            value: enableAudio,
-            onChanged: (bool value) {
-              enableAudio = value;
-              if (controller != null) {
-                onNewCameraSelected(controller.description);
-              }
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Display the thumbnail of the captured image or video.
   Widget _thumbnailWidget() {
-    return Expanded(
-      child: Align(
-        alignment: Alignment.centerRight,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-          ],
-        ),
-      ),
+    return ClipRRect(
+      borderRadius: BorderRadius.all(Radius.circular(64.0)),
+      child: imagePath == null
+          ? Container()
+          : SizedBox(
+              child: Image.file(
+                File(imagePath),
+                fit: BoxFit.fitWidth,
+              ),
+              width: 64.0,
+              height: 64.0,
+            ),
     );
   }
 
@@ -215,8 +229,8 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
           icon: const Icon(Icons.camera_alt),
           color: Colors.blue,
           onPressed: controller != null &&
-              controller.value.isInitialized &&
-              !controller.value.isRecordingVideo
+                  controller.value.isInitialized &&
+                  !controller.value.isRecordingVideo
               ? onTakePictureButtonPressed
               : null,
         ),
@@ -231,6 +245,7 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
     if (cameras.isEmpty) {
       return const Text('No camera found');
     } else {
+      print(cameras);
       for (CameraDescription cameraDescription in cameras) {
         toggles.add(
           SizedBox(
@@ -263,7 +278,7 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
     }
     controller = CameraController(
       cameraDescription,
-      ResolutionPreset.medium,
+      ResolutionPreset.ultraHigh,
       enableAudio: enableAudio,
     );
 
@@ -288,13 +303,63 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
 
   void onTakePictureButtonPressed() {
     takePicture().then((String filePath) {
+      onPictureTaken(filePath);
       if (mounted) {
         setState(() {
+          oldImagePath = imagePath;
           imagePath = filePath;
         });
-        if (filePath != null) showInSnackBar('Picture saved to $filePath');
+//        if (filePath != null) showInSnackBar('Picture saved to $filePath');
       }
     });
+  }
+
+  void onCameraSwitchButtonPressed() {
+    if (actualCamera.lensDirection == CameraLensDirection.back) {
+      onNewCameraSelected(frontCamera);
+      actualCamera = frontCamera;
+    } else {
+      onNewCameraSelected(backCamera);
+      actualCamera = backCamera;
+    }
+  }
+
+  void onWidgetPreviewButtonPressed() {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (BuildContext context) {
+        return Scaffold(
+          body: Stack(
+            children: <Widget>[
+              Column(
+                children: <Widget>[
+                  Expanded(
+                    child: Container(
+                      child: Center(
+                        child: imagePath == null
+                            ? Container()
+                            : Image.file(File(imagePath), fit: BoxFit.fill),
+                      ),
+                      decoration: BoxDecoration(color: Colors.black),
+                    ),
+                  )
+                ],
+              )
+            ],
+          ),
+        );
+      },
+    ));
+  }
+
+  void onPictureTaken(String tmpImagePath) {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (BuildContext context) {
+        return PictureEditor(
+          updateParent: updateOldImagePath,
+          imagePath: tmpImagePath,
+        );
+      },
+    ));
   }
 
   Future<String> takePicture() async {
@@ -325,4 +390,8 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
     logError(e.code, e.description);
     showInSnackBar('Error: ${e.code}\n${e.description}');
   }
+
+  updateOldImagePath() => setState(() {
+    imagePath = oldImagePath;
+  });
 }
