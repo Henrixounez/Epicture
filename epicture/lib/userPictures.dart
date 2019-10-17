@@ -46,7 +46,7 @@ class _UserPicturesState extends State<UserPictures> {
         color: colorBackground,
         onRefresh: getPictures,
         child: CustomScrollView(
-          cacheExtent: 1000,
+          cacheExtent: cacheLimit,
           scrollDirection: Axis.vertical,
           slivers: <Widget>[
             PictureList(pictures: _pictures,)

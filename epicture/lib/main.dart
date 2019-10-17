@@ -75,7 +75,11 @@ class _MainPageState extends State<MainPage> {
       body: PageView(
         controller: pageController,
         onPageChanged: (index) {
-          pageChanged(index);
+          if (globalAccessToken != "")
+            pageChanged(index);
+          else {
+            pageController.animateToPage(0, duration: Duration(milliseconds: 500), curve: Curves.ease);
+          }
         },
         children: <Widget>[
           HomePage(),

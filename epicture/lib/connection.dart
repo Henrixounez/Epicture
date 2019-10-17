@@ -11,6 +11,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 
 class ConnectionPage extends StatefulWidget {
+  const ConnectionPage({Key key, @required this.parent}) : super(key: key);
+  final parent;
+
   @override
   _ConnectionPageState createState() => _ConnectionPageState();
 }
@@ -45,6 +48,7 @@ class _ConnectionPageState extends State<ConnectionPage> {
     prefs.setString('account_username', uri.queryParameters['account_username']);
     prefs.setString('account_id', uri.queryParameters['account_id']);
     prefs.setInt('expires', DateTime.now().millisecondsSinceEpoch + int.parse(uri.queryParameters['expires_in']));
+    widget.parent.setState((){widget.parent.findPrefs();});
   }
 
   Future<Null> initUniLinks() async {

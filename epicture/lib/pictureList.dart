@@ -9,14 +9,14 @@ class PictureList extends StatelessWidget {
   Widget build(BuildContext context) {
     return SliverList(
       delegate: SliverChildBuilderDelegate(
-            (BuildContext context, int index) {
-          return ImgurImage(
+        (BuildContext context, int index) {
+          return new ImgurImage(
             key: ValueKey(index),
             data: this.pictures[index],
           );
         },
         childCount: pictures.length,
-        addAutomaticKeepAlives: true,
+        addAutomaticKeepAlives: false,
       ),
     );
   }

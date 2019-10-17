@@ -16,10 +16,11 @@ const Map<int, Color> ColorMap =
 };
 
 MaterialColor materialcolorBackground = MaterialColor(0xFF34373C, ColorMap);
-Color colorBackground = Color(0xFF34373C);
+Color colorBackground = Color(0xFF24272C);
 Color colorBottomAppBar = Color(0xFF44474C);
 Color colorMiddle = Color(0xFF54575C);
 Color colorGreen = Color(0xFF1CB76D);
+Color colorImageBackground = Color.fromRGBO(52, 55, 60, 1);
 
 Color colorText = Colors.white;
 Color colorFadedText = Colors.white70;

@@ -48,7 +48,7 @@ class _UserFavoritesState extends State<UserFavorites> {
         color: colorBackground,
         onRefresh: getPictures,
         child: CustomScrollView(
-          cacheExtent: 1000,
+          cacheExtent: cacheLimit,
           scrollDirection: Axis.vertical,
           slivers: <Widget>[
             PictureList(pictures: _pictures,)

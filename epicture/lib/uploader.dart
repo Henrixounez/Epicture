@@ -23,83 +23,78 @@ class _UploadFlutterState extends State<UploaderFlutter> {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return Scaffold(
-        backgroundColor: colorBackground,
-        floatingActionButton: FloatingActionButton(
-          heroTag: 'fabUploadHero',
-          backgroundColor: Colors.green,
-          child: Icon(
-            Icons.cloud_upload,
-            color: Colors.white,
-          ),
-          onPressed: _onfabUploadPressed,
+      backgroundColor: colorBackground,
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'fabUploadHero',
+        backgroundColor: Colors.green,
+        child: Icon(
+          Icons.cloud_upload,
+          color: Colors.white,
         ),
-        appBar: AppBar(
-          title: _appBatTitle,
-        ),
-        body: Container(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              children: <Widget>[
-                Container(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                    child: TextField(
-                      style: TextStyle(color: Colors.white),
-                      controller: _tecTitle,
-                      cursorColor: Colors.white,
-                      decoration: InputDecoration(
-                        prefixIcon: null,
-                        hintText: 'Title (required)',
-                        hintStyle: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ),
-                  decoration: BoxDecoration(
-                      borderRadius: BorderRadius.all(Radius.circular(10.0)),
-                      color: colorBottomAppBar),
+        onPressed: _onfabUploadPressed,
+      ),
+      appBar: AppBar(
+        title: _appBatTitle,
+      ),
+      body: Container(
+        padding: EdgeInsets.all(5),
+        child: ListView(
+          children: <Widget>[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10.0),
+              margin: EdgeInsets.symmetric(vertical: 10),
+              child: TextField(
+                style: TextStyle(color: Colors.white),
+                controller: _tecTitle,
+                cursorColor: Colors.white,
+                decoration: InputDecoration(
+                  prefixIcon: null,
+                  hintText: 'Title (required)',
+                  hintStyle: TextStyle(color: Colors.white),
                 ),
-                Container(
-                  child: Padding(
-                    padding: EdgeInsets.all(5.0),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10.0),
-                      child: SizedBox(
-                        child: Image.file(File(widget.imagePath),
-                            fit: BoxFit.fitWidth),
-                        width: 300,
-                        height: 300,
-                      ),
-                    ),
-                  ),
-                  decoration: BoxDecoration(
-                      borderRadius: BorderRadius.all(Radius.circular(10.0)),
-                      color: colorBottomAppBar),
-                ),
-                Container(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                    child: TextField(
-                      style: TextStyle(color: Colors.white),
-                      controller: _tecDescription,
-                      cursorColor: Colors.white,
-                      decoration: InputDecoration(
-                        prefixIcon: null,
-                        hintText: 'Add a descripttion',
-                        hintStyle: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ),
-                  decoration: BoxDecoration(
-                      borderRadius: BorderRadius.all(Radius.circular(10.0)),
-                      color: colorBottomAppBar),
-                ),
-              ],
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(5.0),
+                color: colorBottomAppBar
+              ),
             ),
-          ),
-        ));
+            Container(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10.0),
+                child: Container(
+                  child: Image.file(
+                    File(widget.imagePath),
+                    fit: BoxFit.fitWidth
+                  ),
+                ),
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(5.0),
+                color: colorBottomAppBar
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10.0),
+              margin: EdgeInsets.symmetric(vertical: 10),
+              child: TextField(
+                style: TextStyle(color: Colors.white),
+                controller: _tecDescription,
+                cursorColor: Colors.white,
+                decoration: InputDecoration(
+                  prefixIcon: null,
+                  hintText: 'Add a descripttion',
+                  hintStyle: TextStyle(color: Colors.white),
+                ),
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(5.0),
+                color: colorBottomAppBar),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _onfabUploadPressed() async {

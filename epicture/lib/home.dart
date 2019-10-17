@@ -14,6 +14,7 @@ import 'package:http/http.dart' as http;
 var globalAccessToken = "";
 var globalClientId = "a14de0322afe7eb";
 var globalUsername = "";
+var cacheLimit = 200.0;
 
 class HomePage extends StatefulWidget {
   @override
@@ -45,6 +46,18 @@ class _HomePageState extends State<HomePage> {
       _isConnected = true;
     });
     _refresh();
+  }
+
+  void _disconnect() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    await _scaffoldKey.currentState.openEndDrawer();
+    globalUsername = "";
+    globalAccessToken = "";
+    setState(() {
+      _images = [];
+      _isConnected = false;
+    });
   }
 
   Future<Null> _refresh() async {
@@ -89,7 +102,7 @@ class _HomePageState extends State<HomePage> {
               color: colorBackground,
               onRefresh: _refresh,
               child: CustomScrollView(
-                cacheExtent: 1000,
+                cacheExtent: cacheLimit,
                 scrollDirection: Axis.vertical,
                 slivers: <Widget>[
                   PictureList(pictures: _images,)
@@ -106,7 +119,7 @@ class _HomePageState extends State<HomePage> {
         appBar: AppBar(
           title: Text('Home'),
         ),
-        body: ConnectionPage(),
+        body: ConnectionPage(parent: this),
       );
     }
   }
@@ -181,8 +194,13 @@ class _HomePageState extends State<HomePage> {
               leading: Icon(Icons.favorite, color: colorText,),
               title: Text('Your Favorites', style: TextStyle(color: colorText, fontWeight: FontWeight.bold, fontSize: 20),),
               onTap: () { Navigator.push(context, MaterialPageRoute(builder: (context) => UserFavorites())); },
-            )
-
+            ),
+            Divider(),
+            ListTile(
+              leading: Icon(Icons.exit_to_app, color: colorText),
+              title: Text('Disconnect', style: TextStyle(color: colorText, fontWeight: FontWeight.bold, fontSize: 20),),
+              onTap: _disconnect,
+            ),
           ],
         ),
       )

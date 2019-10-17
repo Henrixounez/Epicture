@@ -19,6 +19,7 @@ class _SearchPage extends State<SearchPage> {
   ScrollController _scrollController;
   var _timeOpacity = 1.0;
   var _images = [];
+  var _tags = [];
   var _values = ['top', 'week', '0'];
   var _lastSearch = ['top', 'week', '0', ''];
 
@@ -26,6 +27,7 @@ class _SearchPage extends State<SearchPage> {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+    _getTags();
   }
 
   @override
@@ -56,10 +58,24 @@ class _SearchPage extends State<SearchPage> {
         color: colorBackground,
         onRefresh: _search,
         child: CustomScrollView(
-          cacheExtent: 1000,
+          cacheExtent: cacheLimit,
           controller: _scrollController,
           scrollDirection: Axis.vertical,
           slivers: <Widget>[
+            SliverToBoxAdapter(
+                child: Container(
+                  height: 100.0,
+                  child: ListView.builder(
+                      cacheExtent: cacheLimit,
+                      addAutomaticKeepAlives: true,
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _tags.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        return _tag(_tags[index]);
+                      }
+                  ),
+                )
+            ),
             SliverAppBar(
               title: Row(
                 children: <Widget>[
@@ -113,23 +129,82 @@ class _SearchPage extends State<SearchPage> {
     );
   }
 
+  Widget _tag(tagData) {
+    return InkWell(
+      onTap: () { _filter.clear(); _filter.text = '#${tagData['name']}'; _search(); },
+      child: Container(
+        margin: EdgeInsets.symmetric(vertical: 5, horizontal: 5),
+        padding: EdgeInsets.all(10),
+        decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            image: DecorationImage(
+                image: NetworkImage('https://i.imgur.com/${tagData['background_hash']}.png'),
+                fit: BoxFit.fitHeight
+            )
+        ),
+        width: 150,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Container(
+              padding: EdgeInsets.symmetric(vertical: 2, horizontal: 5),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(5),
+                color: Color.fromRGBO(0, 0, 0, 100)
+              ),
+              child: Text(tagData['display_name'], style: TextStyle(color: colorText, fontWeight: FontWeight.bold, fontSize: 20))
+            ),
+          ]
+        ),
+      )
+    );
+  }
+
   Future<Null> _search() async {
     if (_values[0] == _lastSearch[0] &&
         _values[1] == _lastSearch[1] &&
         _values[2] == _lastSearch[2] &&
         _filter.text ==  _lastSearch[3])
       return;
+    if (!_filter.text.startsWith('#')) {
+      var response = await http.get(
+        'https://api.imgur.com/3/gallery/search/${_values[0]}/${_values[1]}/${_values[2]}?q=${_filter.text}',
+        headers: {HttpHeaders.authorizationHeader: "Client-ID $globalClientId"}
+      );
+      var data = jsonDecode(response.body)['data'];
+      setState(() {
+        _lastSearch[0] = _values[0];
+        _lastSearch[1] = _values[1];
+        _lastSearch[2] = _values[2];
+        _lastSearch[3] = _filter.text;
+        _images = data;
+      });
+    } else {
+      var search = _filter.text.substring(1);
+      var response = await http.get(
+          'https://api.imgur.com/3/gallery/t/$search',
+          headers: {HttpHeaders.authorizationHeader: "Client-ID $globalClientId"}
+      );
+      var data = jsonDecode(response.body)['data']['items'];
+      setState(() {
+        _lastSearch[0] = _values[0];
+        _lastSearch[1] = _values[1];
+        _lastSearch[2] = _values[2];
+        _lastSearch[3] = _filter.text;
+        _images = data;
+      });
+    }
+  }
+
+  Future<Null> _getTags() async {
     var response = await http.get(
-      'https://api.imgur.com/3/gallery/search/${_values[0]}/${_values[1]}/${_values[2]}?q=${_filter.text}',
-      headers: {HttpHeaders.authorizationHeader: "Client-ID $globalClientId"}
+        'https://api.imgur.com/3/tags',
+        headers: {HttpHeaders.authorizationHeader: "Client-ID $globalClientId"}
     );
     var data = jsonDecode(response.body)['data'];
     setState(() {
-      _lastSearch[0] = _values[0];
-      _lastSearch[1] = _values[1];
-      _lastSearch[2] = _values[2];
-      _lastSearch[3] = _filter.text;
-      _images = data;
+      _tags = data['tags'];
     });
   }
 }
