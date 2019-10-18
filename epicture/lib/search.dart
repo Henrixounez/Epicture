@@ -170,7 +170,7 @@ class _SearchPage extends State<SearchPage> {
     if (!_filter.text.startsWith('#')) {
       var response = await http.get(
         'https://api.imgur.com/3/gallery/search/${_values[0]}/${_values[1]}/${_values[2]}?q=${_filter.text}',
-        headers: {HttpHeaders.authorizationHeader: "Client-ID $globalClientId"}
+        headers: {HttpHeaders.authorizationHeader: "Bearer $globalAccessToken"}
       );
       var data = jsonDecode(response.body)['data'];
       setState(() {
@@ -184,7 +184,7 @@ class _SearchPage extends State<SearchPage> {
       var search = _filter.text.substring(1);
       var response = await http.get(
           'https://api.imgur.com/3/gallery/t/$search',
-          headers: {HttpHeaders.authorizationHeader: "Client-ID $globalClientId"}
+          headers: {HttpHeaders.authorizationHeader: "Bearer $globalAccessToken"}
       );
       var data = jsonDecode(response.body)['data']['items'];
       setState(() {

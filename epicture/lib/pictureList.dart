@@ -1,5 +1,6 @@
 import 'package:epicture/image.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 class PictureList extends StatelessWidget {
   PictureList({Key key, this.pictures}) : super(key: key);
@@ -7,6 +8,11 @@ class PictureList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (pictures == null) {
+      return SliverToBoxAdapter(
+        child: Container(),
+      );
+    }
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (BuildContext context, int index) {

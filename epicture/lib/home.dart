@@ -14,6 +14,7 @@ import 'package:http/http.dart' as http;
 var globalAccessToken = "";
 var globalClientId = "a14de0322afe7eb";
 var globalUsername = "";
+var mature = false;
 var cacheLimit = 200.0;
 
 class HomePage extends StatefulWidget {
@@ -46,6 +47,15 @@ class _HomePageState extends State<HomePage> {
       _isConnected = true;
     });
     _refresh();
+    var response = await http.get(
+      'https://api.imgur.com/3/account/me/settings',
+      headers: {HttpHeaders.authorizationHeader: 'Bearer $globalAccessToken'}
+    );
+    if (mounted) {
+      setState(() {
+        mature = jsonDecode(response.body)['data']['show_mature'];
+      });
+    }
   }
 
   void _disconnect() async {
@@ -62,7 +72,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<Null> _refresh() async {
     var response = await http.get(
-      'https://api.imgur.com/3/gallery/hot/time/0?showViral=true&album_previews=false',
+      'https://api.imgur.com/3/gallery/hot/time/0?showViral=true&album_previews=false&mature=$mature',
       headers: {HttpHeaders.authorizationHeader: "Bearer $globalAccessToken"},
     );
     var data = jsonDecode(response.body)['data'];
@@ -196,6 +206,19 @@ class _HomePageState extends State<HomePage> {
               onTap: () { Navigator.push(context, MaterialPageRoute(builder: (context) => UserFavorites())); },
             ),
             Divider(),
+            ListTile(
+              leading: Icon(mature ? Icons.whatshot : Icons.lock, color: colorText),
+              title: Text('Mature Content' + (mature ? ' On' : ' Off'), style: TextStyle(color: colorText, fontWeight: FontWeight.bold, fontSize: 20),),
+              onTap: () async {
+                mature = !mature;
+                setState(() {});
+                _refresh();
+                var response = await http.put(
+                  'https://api.imgur.com/3/account/$globalUsername/settings?show_mature=$mature',
+                  headers: {HttpHeaders.authorizationHeader: 'Bearer $globalAccessToken'}
+                );
+              },
+            ),
             ListTile(
               leading: Icon(Icons.exit_to_app, color: colorText),
               title: Text('Disconnect', style: TextStyle(color: colorText, fontWeight: FontWeight.bold, fontSize: 20),),

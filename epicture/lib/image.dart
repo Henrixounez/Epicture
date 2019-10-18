@@ -21,6 +21,7 @@ class _ImgurImageState extends State<ImgurImage> {
   var data = {};
   Future<String> avatarUrl;
   bool gotAvatar = false;
+  bool isInit = false;
 
   @override
   void initState() {
@@ -33,25 +34,45 @@ class _ImgurImageState extends State<ImgurImage> {
     } else {
       setState(() {
         data = widget.data;
+        isInit = true;
       });
     }
   }
 
   void getData() async {
     var hash = widget.data['id'];
-    var response = await http.get(
-      'https://api.imgur.com/3/album/$hash',
-      headers: {HttpHeaders.authorizationHeader: "Bearer $globalAccessToken"},
-    );
-    if (mounted) {
-      setState(() {
-        data = jsonDecode(response.body)['data'];
-      });
+    if (widget.data['is_album'] == true) {
+      var response = await http.get(
+        'https://api.imgur.com/3/album/$hash',
+        headers: {HttpHeaders.authorizationHeader: "Bearer $globalAccessToken"},
+      );
+      if (mounted) {
+        setState(() {
+          data = jsonDecode(response.body)['data'];
+          isInit = true;
+        });
+      }
+    } else {
+      var response = await http.get(
+        'https://api.imgur.com/3/album/$hash',
+        headers: {HttpHeaders.authorizationHeader: "Bearer $globalAccessToken"},
+      );
+      if (mounted) {
+        setState(() {
+          data['images'] = {jsonDecode(response.body)};
+          isInit = true;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (isInit && data['id'] != widget.data['id']) {
+      data = widget.data;
+      avatarUrl = getAvatar();
+      getData();
+    }
     if (data['link'] == null) {
       return Divider();
     }
@@ -126,7 +147,10 @@ class _ImgurImageState extends State<ImgurImage> {
                   )
                 ),
               ),
-              ImageLoader(data: data, index: 0,),
+              InkWell(
+                onTap: () {Navigator.push(context, MaterialPageRoute(builder: (context) => BigPicture(data: data)));},
+                child: ImageLoader(data: data, index: 0,),
+              ),
               Column(
                 children: <Widget>[
                   Container(
@@ -287,12 +311,16 @@ class _ImageLoaderState extends State<ImageLoader> {
   Future<String> imgUrl;
   VideoPlayerController _videoController;
   bool _videoLoaded = false;
+  var data = {};
+  var isInit = false;
 
   @override
   void initState() {
     super.initState();
     setState(() {
+      data = widget.data;
       imgUrl = getImg();
+      isInit = true;
     });
   }
 
@@ -300,13 +328,18 @@ class _ImageLoaderState extends State<ImageLoader> {
   void dispose() {
     super.dispose();
     if (_videoController != null) {
-      print('disposed !');
       _videoController.dispose();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (isInit && data['id'] != widget.data['id']) {
+      setState(() {
+        data = widget.data;
+        imgUrl = getImg();
+      });
+    }
     return FutureBuilder(
       future: imgUrl,
       builder: (context, snapshot) {
@@ -323,7 +356,6 @@ class _ImageLoaderState extends State<ImageLoader> {
         if (width < MediaQuery.of(context).size.width)
           neededHeight = height.toDouble();
         if (snapshot.connectionState == ConnectionState.done && snapshot.data != null) {
-          print(snapshot.data);
           if (!snapshot.data.toString().endsWith('.mp4')) {
             return Container(
               height: neededHeight,
@@ -369,7 +401,6 @@ class _ImageLoaderState extends State<ImageLoader> {
           _videoController.setLooping(true);
           _videoController.setVolume(0);
         }
-        print(link);
         return link;
       } else {
         var hash = widget.data['cover'];
@@ -454,5 +485,22 @@ class _VideoPlayerState extends State<MyVideoPlayer> {
       paused = !paused;
     });
   }
+}
 
+class BigPicture extends StatelessWidget {
+  const BigPicture({Key key, this.data}) : super(key: key);
+  final data;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: colorBackground,
+      body: SafeArea(
+        child: GestureDetector(
+          onVerticalDragEnd: (data) { Navigator.of(context).pop();},
+          child: Center(child: ImageLoader(data: data, index: 0)),
+        ),
+      )
+    );
+  }
 }
