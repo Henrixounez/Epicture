@@ -32,6 +32,10 @@ dependencies:
   timeago: ^2.0.20
   video_player: ^0.10.2+3
   flutter_launcher_icons: ^0.7.3
+  overlay_support: ^1.0.0
+  image_picker: ^0.6.1+8
+  folding_cell: ^0.1.2
+  flutter_spinkit: ^4.0.0
 
 dev_dependencies:
   flutter_test:

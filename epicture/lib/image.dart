@@ -454,5 +454,4 @@ class _VideoPlayerState extends State<MyVideoPlayer> {
       paused = !paused;
     });
   }
-
 }
