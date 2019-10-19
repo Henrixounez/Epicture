@@ -1,11 +1,16 @@
+import 'dart:io';
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'dart:io';
-import 'dart:convert';
+import 'package:image_picker/image_picker.dart';
 
-import 'colors.dart';
+import 'fold.dart';
 import 'home.dart';
+import 'colors.dart';
+import 'animation.dart';
+import 'imageAlbumUpload.dart';
 
 class UploaderFlutter extends StatefulWidget {
   final String imagePath;
@@ -13,17 +18,33 @@ class UploaderFlutter extends StatefulWidget {
   UploaderFlutter({this.imagePath});
 
   @override
-  _UploadFlutterState createState() => _UploadFlutterState();
+  UploadFlutterState createState() => UploadFlutterState();
 }
 
-class _UploadFlutterState extends State<UploaderFlutter> {
+class UploadFlutterState extends State<UploaderFlutter> {
   final TextEditingController _tecTitle = new TextEditingController();
-  final TextEditingController _tecDescription = new TextEditingController();
+//  final TextEditingController _tecDescription = new TextEditingController();
+  final SnackBar snack = SnackBar(content: Text('Toilettes'));
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  List<ImageAlbumUpload> imagesAlbum;
+
   Widget _appBatTitle = Text('Upload to Imgur');
+  bool loading;
+  int responseUpload;
+
+  @override
+  void initState() {
+    super.initState();
+    loading = false;
+    responseUpload = 0;
+    imagesAlbum = [(ImageAlbumUpload(imagePath: widget.imagePath,))];
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: colorBackground,
       floatingActionButton: FloatingActionButton(
         heroTag: 'fabUploadHero',
@@ -59,37 +80,16 @@ class _UploadFlutterState extends State<UploaderFlutter> {
                 color: colorBottomAppBar
               ),
             ),
-            Container(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10.0),
-                child: Container(
-                  child: Image.file(
-                    File(widget.imagePath),
-                    fit: BoxFit.fitWidth
-                  ),
-                ),
-              ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(5.0),
-                color: colorBottomAppBar
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10.0),
-              margin: EdgeInsets.symmetric(vertical: 10),
-              child: TextField(
-                style: TextStyle(color: Colors.white),
-                controller: _tecDescription,
-                cursorColor: Colors.white,
-                decoration: InputDecoration(
-                  prefixIcon: null,
-                  hintText: 'Add a descripttion',
-                  hintStyle: TextStyle(color: Colors.white),
-                ),
-              ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(5.0),
-                color: colorBottomAppBar),
+            ...imagesAlbum,
+            FlatButton(
+              color: colorGreen,
+              textColor: Colors.white,
+              child: Text("Add more images"),
+              onPressed: () async {
+                String path = await getImage();
+                imagesAlbum.add(ImageAlbumUpload(imagePath: path,));
+                setState(() {});
+              },
             ),
           ],
         ),
@@ -97,25 +97,128 @@ class _UploadFlutterState extends State<UploaderFlutter> {
     );
   }
 
-  void _onfabUploadPressed() async {
+  Future<http.Response> _imageUpload(ImageAlbumUpload image, bool multi, String albumToken) async {
     String title = _tecTitle.text;
-    String description = _tecDescription.text;
-    String base64Image = base64.encode(File(widget.imagePath).readAsBytesSync());
+    String description = image.tecDescription.text;
+    String base64Image = base64.encode(File(image.imagePath).readAsBytesSync());
+    Map body = {};
 
-    if (title == null) {
-      print("thinkng");
-      return;
+    body['image'] = base64Image;
+    if (!multi) {
+      body['title'] = title;
+    } else {
+      body['album'] = albumToken;
     }
+    if (description != '') {
+      body['description'] = description;
+    }
+
     var response = await http.post('https://api.imgur.com/3/upload',
+        headers: {HttpHeaders.authorizationHeader: 'Bearer $globalAccessToken'},
+        body: body
+    );
+    return response;
+  }
+
+  void _soloImageUpload(ImageAlbumUpload image) async {
+    GlobalKey<TestState> key = GlobalKey<TestState>();
+    Navigator.of(context).push(
+        SlideLeftRoute(page: Test(key: key, parent: this, title: _tecTitle.text,))
+    );
+
+    var response = await _imageUpload(image, false, '');
+
+    if (response.statusCode == 200) {
+      print("in response\n##############");
+      setState(() {
+        responseUpload = response.statusCode;
+        loading = false;
+      });
+      key.currentState.setState(() {});
+    } else {
+      print("ERROR: ${response.statusCode}");
+      setState(() {
+        responseUpload = response.statusCode;
+        loading = false;
+      });
+      key.currentState.setState(() {});
+    }
+  }
+
+  void _onAlbumUpload() async {
+    GlobalKey<TestState> key = GlobalKey<TestState>();
+    Navigator.of(context).push(
+        SlideLeftRoute(page: Test(key: key, parent: this, title: _tecTitle.text,))
+    );
+
+    var response = await http.post('https://api.imgur.com/3/album',
     headers: {HttpHeaders.authorizationHeader: 'Bearer $globalAccessToken'},
     body: {
-      'image': base64Image,
-      'title': title,
+      'title': _tecTitle.text
     });
-    print(response.statusCode);
+
     if (response.statusCode == 200) {
-      Navigator.of(context).pop();
-      Navigator.of(context).pop();
+      String token;
+      if (_tecTitle.text == '') {
+        token = jsonDecode(response.body)['data']['deletehash'];
+      } else {
+        token = jsonDecode(response.body)['data']['id'];
+      }
+      Future.wait(imagesAlbum.map((ImageAlbumUpload image) async {
+        var response = await _imageUpload(image, true, token);
+        return response.statusCode;
+      })).then((_) {
+        setState(() {
+          responseUpload = response.statusCode;
+          loading = false;
+        });
+        key.currentState.setState(() {});
+      });
     }
+  }
+
+  void _onfabUploadPressed() async {
+    if (loading) {
+      return;
+    }
+    setState(() {
+      loading = true;
+    });
+    if (imagesAlbum.length == 1) {
+      _soloImageUpload(imagesAlbum[0]);
+    } else {
+      _onAlbumUpload();
+    }
+  }
+
+  Future<String> getImage() async {
+    File _image = await ImagePicker.pickImage(source: ImageSource.gallery);
+
+    return _image.path;
+  }
+}
+
+
+class UploaderFAB extends StatelessWidget {
+  final String imagePath;
+  final Color backgroundColor;
+  final Icon fabIcon;
+
+  UploaderFAB({this.imagePath, this.backgroundColor, this.fabIcon});
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton(
+      heroTag: "uploaderFABHero",
+      onPressed: () {
+        Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (BuildContext context) {
+            return UploaderFlutter(
+              imagePath: imagePath,
+            );
+          },
+        ));
+      },
+    );
   }
 }

@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:camera/camera.dart';
 import 'package:path_provider/path_provider.dart';
 import 'editor.dart';
+import 'uploader.dart';
 
 List<CameraDescription> cameras;
 
@@ -104,13 +106,16 @@ class CameraExampleHomeState extends State<CameraExampleHome>
             child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 30.0, vertical: 20.0),
                 child: FloatingActionButton(
-                  heroTag: "widgetHero",
+                  heroTag: "galleryHero",
                   backgroundColor: Colors.white,
-                  child: _thumbnailWidget(),
+                  child: Icon(
+                    Icons.image,
+                    color: Colors.grey
+                  ),
                   onPressed: controller != null &&
                           controller.value.isInitialized &&
                           !controller.value.isRecordingVideo
-                      ? onWidgetPreviewButtonPressed
+                      ? onGalleryButtonPressed
                       : null,
                 )),
           ),
@@ -156,28 +161,6 @@ class CameraExampleHomeState extends State<CameraExampleHome>
         )
       ],
     )
-//      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-//      floatingActionButton: FloatingActionButton(
-//        child: Icon(Icons.camera),
-//        onPressed: controller != null &&
-//            controller.value.isInitialized &&
-//            !controller.value.isRecordingVideo
-//            ? onTakePictureButtonPressed
-//            : null,
-//      ),
-//      bottomNavigationBar: BottomAppBar(
-//        color: Colors.red,
-//        shape: CircularNotchedRectangle(),
-//        notchMargin: 4.0,
-//        child: Row(
-//          mainAxisSize: MainAxisSize.max,
-//          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//          children: <Widget>[
-//            IconButton(icon: Icon(Icons.home), onPressed: (){},),
-//            IconButton(icon: Icon(Icons.search), onPressed: (){},),
-//          ],
-//        ),
-//      ),
         );
   }
 
@@ -202,70 +185,6 @@ class CameraExampleHomeState extends State<CameraExampleHome>
       );
     }
   }
-
-  Widget _thumbnailWidget() {
-    return ClipRRect(
-      borderRadius: BorderRadius.all(Radius.circular(64.0)),
-      child: imagePath == null
-          ? Container()
-          : SizedBox(
-              child: Image.file(
-                File(imagePath),
-                fit: BoxFit.fitWidth,
-              ),
-              width: 64.0,
-              height: 64.0,
-            ),
-    );
-  }
-
-  /// Display the control bar with buttons to take pictures and record videos.
-  Widget _captureControlRowWidget() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      mainAxisSize: MainAxisSize.max,
-      children: <Widget>[
-        IconButton(
-          icon: const Icon(Icons.camera_alt),
-          color: Colors.blue,
-          onPressed: controller != null &&
-                  controller.value.isInitialized &&
-                  !controller.value.isRecordingVideo
-              ? onTakePictureButtonPressed
-              : null,
-        ),
-      ],
-    );
-  }
-
-  /// Display a row of toggle to select the camera (or a message if no camera is available).
-  Widget _cameraTogglesRowWidget() {
-    final List<Widget> toggles = <Widget>[];
-
-    if (cameras.isEmpty) {
-      return const Text('No camera found');
-    } else {
-      print(cameras);
-      for (CameraDescription cameraDescription in cameras) {
-        toggles.add(
-          SizedBox(
-            width: 90.0,
-            child: RadioListTile<CameraDescription>(
-              title: Icon(getCameraLensIcon(cameraDescription.lensDirection)),
-              groupValue: controller?.description,
-              value: cameraDescription,
-              onChanged: controller != null && controller.value.isRecordingVideo
-                  ? null
-                  : onNewCameraSelected,
-            ),
-          ),
-        );
-      }
-    }
-
-    return Row(children: toggles);
-  }
-
   String timestamp() => DateTime.now().millisecondsSinceEpoch.toString();
 
   void showInSnackBar(String message) {
@@ -324,31 +243,15 @@ class CameraExampleHomeState extends State<CameraExampleHome>
     }
   }
 
-  void onWidgetPreviewButtonPressed() {
-    Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (BuildContext context) {
-        return Scaffold(
-          body: Stack(
-            children: <Widget>[
-              Column(
-                children: <Widget>[
-                  Expanded(
-                    child: Container(
-                      child: Center(
-                        child: imagePath == null
-                            ? Container()
-                            : Image.file(File(imagePath), fit: BoxFit.fill),
-                      ),
-                      decoration: BoxDecoration(color: Colors.black),
-                    ),
-                  )
-                ],
-              )
-            ],
-          ),
-        );
-      },
-    ));
+  Future<String> getImage() async {
+    File _image = await ImagePicker.pickImage(source: ImageSource.gallery);
+
+    return _image.path;
+  }
+
+  void onGalleryButtonPressed() async {
+    String path = await getImage();
+    onUploadPressed(path);
   }
 
   void onPictureTaken(String tmpImagePath) {
@@ -394,4 +297,14 @@ class CameraExampleHomeState extends State<CameraExampleHome>
   updateOldImagePath() => setState(() {
     imagePath = oldImagePath;
   });
+
+  void onUploadPressed(imagePath) {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (BuildContext context) {
+        return UploaderFlutter(
+          imagePath: imagePath,
+        );
+      },
+    ));
+  }
 }

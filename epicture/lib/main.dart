@@ -5,6 +5,7 @@ import 'package:epicture/colors.dart';
 import 'package:epicture/search.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:overlay_support/overlay_support.dart';
 import 'camera.dart';
 import 'search.dart';
 import 'home.dart';
@@ -49,14 +50,16 @@ Future<void> main() async {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Epicture',
-      theme: ThemeData(
-        primarySwatch: materialcolorBackground,
-        backgroundColor: materialcolorBackground,
-        accentColor: colorText,
-      ),
+    return OverlaySupport(
+      child: MaterialApp(
+        title: 'Epicture',
+        theme: ThemeData(
+          primarySwatch: materialcolorBackground,
+          backgroundColor: materialcolorBackground,
+          accentColor: colorText,
+        ),
         home: MainPage(),
+      ),
     );
   }
 }
