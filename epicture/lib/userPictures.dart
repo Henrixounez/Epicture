@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:epicture/colors.dart';
 import 'package:epicture/home.dart';
@@ -22,13 +23,38 @@ class _UserPicturesState extends State<UserPictures> {
     getPictures();
   }
 
+
+
   Future<Null> getPictures() async {
     var response = await http.get(
       'https://api.imgur.com/3/account/me/images',
       headers: {HttpHeaders.authorizationHeader: "Bearer $globalAccessToken"},
     );
+    if (response.statusCode != 200) {
+      return;
+    }
     var data = jsonDecode(response.body);
-    var pictures = data["data"];
+    List pictures = data["data"];
+    var responseAlbums = await http.get(
+      'https://api.imgur.com/3/account/me/albums/0',
+      headers: {HttpHeaders.authorizationHeader: "Bearer $globalAccessToken"},
+    );
+    if (responseAlbums.statusCode != 200) {
+      return;
+    }
+    var albumData = jsonDecode(responseAlbums.body)['data'];
+    for (var album in albumData) {
+      var res = await http.get(
+        'https://api.imgur.com/3/account/me/album/${album['id']}',
+        headers: {HttpHeaders.authorizationHeader: "Bearer $globalAccessToken"},
+      );
+      var albumRes = await jsonDecode(res.body)['data'];
+        for (var imageAlbum in albumRes['images']) {
+          pictures.removeWhere((element) => (element['id'] == imageAlbum['id']));
+        }
+        pictures.add(albumRes);
+    }
+    pictures.sort((a, b) => b['datetime'].compareTo(a['datetime']));
     setState(() {
       _pictures = pictures;
     });

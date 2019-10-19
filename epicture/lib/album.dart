@@ -114,9 +114,9 @@ class _AlbumState extends State<Album> {
             ),
             AlbumPicture(data: widget.images),
             SliverToBoxAdapter(
-              child: Wrap(
+              child: widget.images['tags'] != null ? (Wrap(
                 children: widget.images['tags'].map<Widget>((tag) { return _tag(tag); }).toList()
-              )
+              )) : Text('')
             ),
             SliverToBoxAdapter(
               child: Divider(height: 30,),
