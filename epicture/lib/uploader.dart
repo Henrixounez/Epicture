@@ -1,13 +1,16 @@
+import 'dart:io';
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'dart:io';
-import 'dart:convert';
-import 'fold.dart';
+import 'package:image_picker/image_picker.dart';
 
-import 'colors.dart';
+import 'fold.dart';
 import 'home.dart';
+import 'colors.dart';
 import 'animation.dart';
+import 'imageAlbumUpload.dart';
 
 class UploaderFlutter extends StatefulWidget {
   final String imagePath;
@@ -20,11 +23,11 @@ class UploaderFlutter extends StatefulWidget {
 
 class UploadFlutterState extends State<UploaderFlutter> {
   final TextEditingController _tecTitle = new TextEditingController();
-  final TextEditingController _tecDescription = new TextEditingController();
+//  final TextEditingController _tecDescription = new TextEditingController();
   final SnackBar snack = SnackBar(content: Text('Toilettes'));
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  List<String> imagesAlbum;
+  List<ImageAlbumUpload> imagesAlbum;
 
   Widget _appBatTitle = Text('Upload to Imgur');
   bool loading;
@@ -35,6 +38,7 @@ class UploadFlutterState extends State<UploaderFlutter> {
     super.initState();
     loading = false;
     responseUpload = 0;
+    imagesAlbum = [(ImageAlbumUpload(imagePath: widget.imagePath,))];
   }
 
   @override
@@ -76,37 +80,16 @@ class UploadFlutterState extends State<UploaderFlutter> {
                 color: colorBottomAppBar
               ),
             ),
-            Container(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10.0),
-                child: Container(
-                  child: Image.file(
-                    File(widget.imagePath),
-                    fit: BoxFit.fitWidth
-                  ),
-                ),
-              ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(5.0),
-                color: colorBottomAppBar
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10.0),
-              margin: EdgeInsets.symmetric(vertical: 10),
-              child: TextField(
-                style: TextStyle(color: Colors.white),
-                controller: _tecDescription,
-                cursorColor: Colors.white,
-                decoration: InputDecoration(
-                  prefixIcon: null,
-                  hintText: 'Add a descripttion',
-                  hintStyle: TextStyle(color: Colors.white),
-                ),
-              ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(5.0),
-                color: colorBottomAppBar),
+            ...imagesAlbum,
+            FlatButton(
+              color: colorGreen,
+              textColor: Colors.white,
+              child: Text("Add more images"),
+              onPressed: () async {
+                String path = await getImage();
+                imagesAlbum.add(ImageAlbumUpload(imagePath: path,));
+                setState(() {});
+              },
             ),
           ],
         ),
@@ -114,38 +97,36 @@ class UploadFlutterState extends State<UploaderFlutter> {
     );
   }
 
-  void _onfabUploadPressed() async {
-    if (loading) {
-      return;
-    }
-    setState(() {
-      loading = true;
-    });
+  Future<http.Response> _imageUpload(ImageAlbumUpload image, bool multi, String albumToken) async {
     String title = _tecTitle.text;
-    String description = _tecDescription.text;
-    String base64Image = base64.encode(File(widget.imagePath).readAsBytesSync());
+    String description = image.tecDescription.text;
+    String base64Image = base64.encode(File(image.imagePath).readAsBytesSync());
     Map body = {};
 
-    if (title == null) {
-      print("thinkng");
-      return;
-    }
-
     body['image'] = base64Image;
-    body['title'] = title;
+    if (!multi) {
+      body['title'] = title;
+    } else {
+      body['album'] = albumToken;
+    }
     if (description != '') {
       body['description'] = description;
     }
 
+    var response = await http.post('https://api.imgur.com/3/upload',
+        headers: {HttpHeaders.authorizationHeader: 'Bearer $globalAccessToken'},
+        body: body
+    );
+    return response;
+  }
+
+  void _soloImageUpload(ImageAlbumUpload image) async {
     GlobalKey<TestState> key = GlobalKey<TestState>();
     Navigator.of(context).push(
-        SlideLeftRoute(page: Test(key: key, parent: this, title: title,))
+        SlideLeftRoute(page: Test(key: key, parent: this, title: _tecTitle.text,))
     );
 
-    var response = await http.post('https://api.imgur.com/3/upload',
-    headers: {HttpHeaders.authorizationHeader: 'Bearer $globalAccessToken'},
-    body: body
-    );
+    var response = await _imageUpload(image, false, '');
 
     if (response.statusCode == 200) {
       print("in response\n##############");
@@ -162,6 +143,58 @@ class UploadFlutterState extends State<UploaderFlutter> {
       });
       key.currentState.setState(() {});
     }
+  }
+
+  void _onAlbumUpload() async {
+    GlobalKey<TestState> key = GlobalKey<TestState>();
+    Navigator.of(context).push(
+        SlideLeftRoute(page: Test(key: key, parent: this, title: _tecTitle.text,))
+    );
+
+    var response = await http.post('https://api.imgur.com/3/album',
+    headers: {HttpHeaders.authorizationHeader: 'Bearer $globalAccessToken'},
+    body: {
+      'title': _tecTitle.text
+    });
+
+    if (response.statusCode == 200) {
+      String token;
+      if (_tecTitle.text == '') {
+        token = jsonDecode(response.body)['data']['deletehash'];
+      } else {
+        token = jsonDecode(response.body)['data']['id'];
+      }
+      Future.wait(imagesAlbum.map((ImageAlbumUpload image) async {
+        var response = await _imageUpload(image, true, token);
+        return response.statusCode;
+      })).then((_) {
+        setState(() {
+          responseUpload = response.statusCode;
+          loading = false;
+        });
+        key.currentState.setState(() {});
+      });
+    }
+  }
+
+  void _onfabUploadPressed() async {
+    if (loading) {
+      return;
+    }
+    setState(() {
+      loading = true;
+    });
+    if (imagesAlbum.length == 1) {
+      _soloImageUpload(imagesAlbum[0]);
+    } else {
+      _onAlbumUpload();
+    }
+  }
+
+  Future<String> getImage() async {
+    File _image = await ImagePicker.pickImage(source: ImageSource.gallery);
+
+    return _image.path;
   }
 }
 
