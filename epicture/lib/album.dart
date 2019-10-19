@@ -4,9 +4,10 @@ import 'dart:io';
 import 'package:epicture/colors.dart';
 import 'package:epicture/home.dart';
 import 'package:epicture/image.dart';
+import 'package:epicture/main.dart';
+import 'package:epicture/search.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:timeago/timeago.dart' as timeago;
 import 'package:http/http.dart' as http;
 
 class Album extends StatefulWidget {
@@ -40,13 +41,54 @@ class _AlbumState extends State<Album> {
     }
   }
 
+  void _vote(bool upvote) async {
+    String last_vote = widget.images['vote'];
+    String vote = "up";
+    if (!upvote) {
+      vote = "down";
+    }
+    if (vote == widget.images['vote']) {
+      vote = "veto";
+    }
+    await http.post('https://api.imgur.com/3/gallery/${widget.images['id']}/vote/${vote}',
+        headers: {HttpHeaders.authorizationHeader: 'Bearer $globalAccessToken'});
+    setState(() {
+      widget.images['vote'] = vote;
+      if (last_vote == "up")
+        widget.images['ups']--;
+      if (last_vote == "down")
+        widget.images['downs']--;
+      if (vote == "up")
+        widget.images['ups']++;
+      if (vote == "down")
+        widget.images['downs']++;
+    });
+  }
+
+  void _favImage() async {
+    if (widget.images['is_album']) {
+      await http.post('https://api.imgur.com/3/album/${widget.images['id']}/favorite',
+          headers: {HttpHeaders.authorizationHeader: 'Bearer $globalAccessToken'});
+    } else {
+      await http.post('https://api.imgur.com/3/image/${widget.images['cover']}/favorite',
+          headers: {HttpHeaders.authorizationHeader: 'Bearer $globalAccessToken'});
+    }
+    setState(() {
+      widget.images['favorite'] = !widget.images['favorite'];
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: colorBackground,
       appBar: AppBar(
         backgroundColor: colorBottomAppBar,
-        title: Text('', style: TextStyle(color: colorText),),
+        actions: <Widget>[
+          MaterialButton(minWidth: 0, onPressed: () {_vote(true); }, child: Icon(Icons.keyboard_arrow_up, color: (widget.images['vote'] == 'up') ? Colors.green : colorMetrics, size: 30,)),
+          MaterialButton(minWidth: 0, onPressed: () {_vote(false);}, child: Icon(Icons.keyboard_arrow_down, color: (widget.images['vote'] == 'down') ? Colors.red : colorMetrics, size: 30)),
+          MaterialButton(minWidth: 0, onPressed: () {_favImage(); }, child: widget.images['favorite'] ? Icon(Icons.favorite, color: colorFavorite,) : Icon(Icons.favorite_border, color: colorMetrics,)),
+        ],
       ),
       body: CustomScrollView(
           cacheExtent: 1000,
@@ -62,7 +104,7 @@ class _AlbumState extends State<Album> {
                     widget.images['title'] != null ? Text(widget.images['title'], style: TextStyle(color: colorText, fontWeight: FontWeight.bold, fontSize: 20), textAlign: TextAlign.left,) : Text(''),
                     widget.images['description'] != null ? Text(widget.images['description'], style: TextStyle(color: colorText, fontWeight: FontWeight.bold, fontSize: 20), textAlign: TextAlign.left,) : Text(''),
                     Text(
-                      (widget.images['account_url'] != null ? widget.images['account_url'] : 'unknown') + ' • ' + _getTimeago(),
+                      (widget.images['account_url'] != null ? widget.images['account_url'] : 'unknown') + ' • ' + getTimeago(widget.images['datetime']),
                       style: TextStyle(color: colorFadedText),
                       textAlign: TextAlign.left,
                     ),
@@ -72,6 +114,11 @@ class _AlbumState extends State<Album> {
             ),
             AlbumPicture(data: widget.images),
             SliverToBoxAdapter(
+              child: Wrap(
+                children: widget.images['tags'].map<Widget>((tag) { return _tag(tag); }).toList()
+              )
+            ),
+            SliverToBoxAdapter(
               child: Divider(height: 30,),
             ),
             AlbumComments(comments: _comments, depth: 0,),
@@ -80,14 +127,33 @@ class _AlbumState extends State<Album> {
     );
   }
 
-  String _getTimeago() {
-    if (widget.images['datetime'] == null)
-      return '';
-    final startTime = DateTime.fromMillisecondsSinceEpoch(widget.images['datetime'] * 1000);
-    final now = DateTime.now();
-    final diff = now.difference(startTime);
-    final time = timeago.format(now.subtract(diff), locale: 'en_short');
-    return time;
+  Widget _tag(tagData) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 5, horizontal: 5),
+      padding: EdgeInsets.all(10),
+      decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          image: DecorationImage(
+              image: NetworkImage('https://i.imgur.com/${tagData['background_hash']}.png'),
+              fit: BoxFit.fitHeight
+          )
+      ),
+      width: 80,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          Container(
+              padding: EdgeInsets.symmetric(vertical: 2, horizontal: 5),
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(5),
+                  color: Color.fromRGBO(0, 0, 0, 100)
+              ),
+              child: Text(tagData['display_name'], style: TextStyle(color: colorText, fontWeight: FontWeight.bold, fontSize: 10))
+          ),
+        ]
+      ),
+    );
   }
 }
 
@@ -195,7 +261,7 @@ class _AlbumCommentsState extends State<AlbumComments> {
                     children: <Widget>[
                       Text(widget.comments[index]['author'], style: TextStyle(color: colorText, fontSize: 15, fontWeight: FontWeight.bold),),
                       VerticalDivider(),
-                      Text(_getTimeago(widget.comments[index]['datetime']), style: TextStyle(color: colorFadedText, fontSize: 14),),
+                      Text(getTimeago(widget.comments[index]['datetime']), style: TextStyle(color: colorFadedText, fontSize: 14),),
                       VerticalDivider(),
                       Text('${widget.comments[index]['points']} pts', style: TextStyle(color: colorFadedText, fontSize: 14),),
                     ],
@@ -253,15 +319,5 @@ class _AlbumCommentsState extends State<AlbumComments> {
         childCount: widget.comments.length,
       )
     );
-  }
-
-  String _getTimeago(int date) {
-    if (date == null)
-      return '';
-    final startTime = DateTime.fromMillisecondsSinceEpoch(date * 1000);
-    final now = DateTime.now();
-    final diff = now.difference(startTime);
-    final time = timeago.format(now.subtract(diff), locale: 'en_short');
-    return time;
   }
 }

@@ -11,6 +11,11 @@ import 'home.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:timeago/src/messages/lookupmessages.dart';
 
+PageController pageController = PageController(
+  initialPage: 0,
+  keepPage: true,
+);
+
 class CustomMessages implements LookupMessages {
   String prefixAgo() => '';
   String prefixFromNow() => '';
@@ -63,11 +68,6 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   int selectedIndex = 0;
-
-  PageController pageController = PageController(
-    initialPage: 0,
-    keepPage: true,
-  );
 
   @override
   Widget build(BuildContext context) {

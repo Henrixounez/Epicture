@@ -9,6 +9,19 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:video_player/video_player.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+
+var loaded = 0;
+
+String getTimeago(date) {
+  if (date == null)
+    return '';
+  final startTime = DateTime.fromMillisecondsSinceEpoch(date * 1000);
+  final now = DateTime.now();
+  final diff = now.difference(startTime);
+  final time = timeago.format(now.subtract(diff), locale: 'en_short');
+  return time;
+}
 
 class ImgurImage extends StatefulWidget {
   const ImgurImage({Key key, @required this.data}) : super(key: key);
@@ -126,7 +139,7 @@ class _ImgurImageState extends State<ImgurImage> {
                                   textAlign: TextAlign.left,
                                 ),
                                 Text(
-                                  username + ' • ' + getTimeago() + getAlbum() + getSection(),
+                                  username + ' • ' + getTimeago(data['datetime']) + getAlbum() + getSection(),
                                   style: TextStyle(color: colorFadedText),
                                   textAlign: TextAlign.left,
                                 ),
@@ -186,6 +199,7 @@ class _ImgurImageState extends State<ImgurImage> {
     });
   }
 
+
   void _vote(bool upvote) async {
     String last_vote = data['vote'];
     String vote = "up";
@@ -235,16 +249,6 @@ class _ImgurImageState extends State<ImgurImage> {
       });
     }
     return data['avatar'];
-  }
-
-  String getTimeago() {
-    if (data['datetime'] == null)
-      return '';
-    final startTime = DateTime.fromMillisecondsSinceEpoch(data['datetime'] * 1000);
-    final now = DateTime.now();
-    final diff = now.difference(startTime);
-    final time = timeago.format(now.subtract(diff), locale: 'en_short');
-    return time;
   }
 
   String getSection() {
@@ -359,7 +363,12 @@ class _ImageLoaderState extends State<ImageLoader> {
           if (!snapshot.data.toString().endsWith('.mp4')) {
             return Container(
               height: neededHeight,
-              child: Image.network(snapshot.data),
+              child: CachedNetworkImage(
+                filterQuality: FilterQuality.none,
+                imageUrl: snapshot.data,
+                placeholder: (context, url) => Center(child: CircularProgressIndicator()),
+                errorWidget: (context, url, error) => Icon(Icons.error),
+              )
             );
           } else {
             if (_videoLoaded && _videoController != null) {
@@ -394,12 +403,13 @@ class _ImageLoaderState extends State<ImageLoader> {
           if (link == null || link == '') {
             link = widget.data['images'][widget.index]['mp4'];
           }
+          var __videoController = await new VideoPlayerController.network(link)..initialize();
           setState(() {
-            _videoController = new VideoPlayerController.network(link)..initialize();
+            _videoController = __videoController;
             _videoLoaded = true;
           });
-          _videoController.setLooping(true);
-          _videoController.setVolume(0);
+          __videoController.setLooping(true);
+          __videoController.setVolume(0);
         }
         return link;
       } else {

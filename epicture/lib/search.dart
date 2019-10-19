@@ -8,13 +8,15 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'home.dart';
 
+TextEditingController searchFilter = new TextEditingController();
+
+
 class SearchPage extends StatefulWidget {
   @override
   _SearchPage createState() => _SearchPage();
 }
 
 class _SearchPage extends State<SearchPage> {
-  final TextEditingController _filter = new TextEditingController();
   FocusNode _focusNode;
   ScrollController _scrollController;
   var _timeOpacity = 1.0;
@@ -44,7 +46,7 @@ class _SearchPage extends State<SearchPage> {
                 _search();
               },
               style: TextStyle(color: colorText),
-              controller: _filter,
+              controller: searchFilter,
               cursorColor: colorText,
               decoration: InputDecoration(
                   prefixIcon: Icon(Icons.search, color: colorText,),
@@ -131,7 +133,7 @@ class _SearchPage extends State<SearchPage> {
 
   Widget _tag(tagData) {
     return InkWell(
-      onTap: () { _filter.clear(); _filter.text = '#${tagData['name']}'; _search(); },
+      onTap: () { searchFilter.clear(); searchFilter.text = '#${tagData['name']}'; _search(); },
       child: Container(
         margin: EdgeInsets.symmetric(vertical: 5, horizontal: 5),
         padding: EdgeInsets.all(10),
@@ -165,11 +167,11 @@ class _SearchPage extends State<SearchPage> {
     if (_values[0] == _lastSearch[0] &&
         _values[1] == _lastSearch[1] &&
         _values[2] == _lastSearch[2] &&
-        _filter.text ==  _lastSearch[3])
+        searchFilter.text ==  _lastSearch[3])
       return;
-    if (!_filter.text.startsWith('#')) {
+    if (!searchFilter.text.startsWith('#')) {
       var response = await http.get(
-        'https://api.imgur.com/3/gallery/search/${_values[0]}/${_values[1]}/${_values[2]}?q=${_filter.text}',
+        'https://api.imgur.com/3/gallery/search/${_values[0]}/${_values[1]}/${_values[2]}?q=${searchFilter.text}',
         headers: {HttpHeaders.authorizationHeader: "Bearer $globalAccessToken"}
       );
       var data = jsonDecode(response.body)['data'];
@@ -177,13 +179,13 @@ class _SearchPage extends State<SearchPage> {
         _lastSearch[0] = _values[0];
         _lastSearch[1] = _values[1];
         _lastSearch[2] = _values[2];
-        _lastSearch[3] = _filter.text;
+        _lastSearch[3] = searchFilter.text;
         _images = data;
       });
     } else {
-      var search = _filter.text.substring(1);
+      var search = searchFilter.text.substring(1);
       var response = await http.get(
-          'https://api.imgur.com/3/gallery/t/$search',
+          'https://api.imgur.com/3/gallery/t/$search/${_values[0]}/${_values[1]}/${_values[2]}',
           headers: {HttpHeaders.authorizationHeader: "Bearer $globalAccessToken"}
       );
       var data = jsonDecode(response.body)['data']['items'];
@@ -191,7 +193,7 @@ class _SearchPage extends State<SearchPage> {
         _lastSearch[0] = _values[0];
         _lastSearch[1] = _values[1];
         _lastSearch[2] = _values[2];
-        _lastSearch[3] = _filter.text;
+        _lastSearch[3] = searchFilter.text;
         _images = data;
       });
     }
@@ -203,8 +205,10 @@ class _SearchPage extends State<SearchPage> {
         headers: {HttpHeaders.authorizationHeader: "Client-ID $globalClientId"}
     );
     var data = jsonDecode(response.body)['data'];
-    setState(() {
-      _tags = data['tags'];
-    });
+    if (mounted) {
+      setState(() {
+        _tags = data['tags'];
+      });
+    }
   }
 }

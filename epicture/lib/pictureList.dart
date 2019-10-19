@@ -22,7 +22,6 @@ class PictureList extends StatelessWidget {
           );
         },
         childCount: pictures.length,
-        addAutomaticKeepAlives: false,
       ),
     );
   }
