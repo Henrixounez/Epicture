@@ -12,6 +12,8 @@ import 'colors.dart';
 import 'animation.dart';
 import 'imageAlbumUpload.dart';
 
+enum PrivacySettings { public, hidden, secret }
+
 class UploaderFlutter extends StatefulWidget {
   final String imagePath;
 
@@ -26,7 +28,7 @@ class UploadFlutterState extends State<UploaderFlutter> {
 //  final TextEditingController _tecDescription = new TextEditingController();
   final SnackBar snack = SnackBar(content: Text('Toilettes'));
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
+  PrivacySettings _privacySelected = PrivacySettings.hidden;
   List<ImageAlbumUpload> imagesAlbum;
 
   Widget _appBatTitle = Text('Upload to Imgur');
@@ -65,15 +67,50 @@ class UploadFlutterState extends State<UploaderFlutter> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10.0),
               margin: EdgeInsets.symmetric(vertical: 10),
-              child: TextField(
-                style: TextStyle(color: Colors.white),
-                controller: _tecTitle,
-                cursorColor: Colors.white,
-                decoration: InputDecoration(
-                  prefixIcon: null,
-                  hintText: 'Title (required)',
-                  hintStyle: TextStyle(color: Colors.white),
-                ),
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    child: TextField(
+                      style: TextStyle(color: Colors.white),
+                      controller: _tecTitle,
+                      cursorColor: Colors.white,
+                      decoration: InputDecoration(
+                        prefixIcon: null,
+                        hintText: 'Title (required)',
+                        hintStyle: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                  DropdownButton<PrivacySettings>(
+                    value: _privacySelected,
+                    icon: Icon(
+                      Icons.arrow_downward,
+                      color: colorGreen,
+                    ),
+                    iconSize: 24,
+                    elevation: 16,
+                    style: TextStyle(
+                      color: Colors.white
+                    ),
+                    underline: Container(
+                      height: 2,
+                      color: colorGreen,
+                    ),
+                    onChanged: (PrivacySettings newSetting) {
+                      setState(() {
+                        _privacySelected = newSetting;
+                        print("new setting : ${_privacySelected.toString().split('.').last}");
+                      });
+                    },
+                    items: <PrivacySettings>[PrivacySettings.public, PrivacySettings.hidden, PrivacySettings.secret]
+                    .map<DropdownMenuItem<PrivacySettings>>((PrivacySettings elem) {
+                      return DropdownMenuItem<PrivacySettings>(
+                        value: elem,
+                        child: Text(elem.toString().split('.').last),
+                      );
+                    }).toList(),
+                  )
+                ],
               ),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(5.0),
@@ -150,11 +187,13 @@ class UploadFlutterState extends State<UploaderFlutter> {
     Navigator.of(context).push(
         SlideLeftRoute(page: Test(key: key, parent: this, title: _tecTitle.text,))
     );
+    print("dans album : $_privacySelected");
 
     var response = await http.post('https://api.imgur.com/3/album',
     headers: {HttpHeaders.authorizationHeader: 'Bearer $globalAccessToken'},
     body: {
-      'title': _tecTitle.text
+      'title': _tecTitle.text,
+      'privacy': _privacySelected.toString().split('.').last
     });
 
     if (response.statusCode == 200) {
@@ -184,7 +223,7 @@ class UploadFlutterState extends State<UploaderFlutter> {
     setState(() {
       loading = true;
     });
-    if (imagesAlbum.length == 1) {
+    if (imagesAlbum.length == 1 && _privacySelected == PrivacySettings.hidden) {
       _soloImageUpload(imagesAlbum[0]);
     } else {
       _onAlbumUpload();

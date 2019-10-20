@@ -49,7 +49,7 @@ class ImageAlbumUploadState extends State<ImageAlbumUpload> {
               cursorColor: Colors.white,
               decoration: InputDecoration(
                 prefixIcon: null,
-                hintText: 'Add a descripttion',
+                hintText: 'Add a description',
                 hintStyle: TextStyle(color: Colors.white),
               ),
             ),

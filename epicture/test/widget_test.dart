@@ -19,6 +19,6 @@ void main() {
   });
 
   test('test', () {
-    final album = Album()
+    final album = Album();
   });
 }
