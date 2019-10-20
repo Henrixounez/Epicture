@@ -54,8 +54,8 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Epicture',
         theme: ThemeData(
-          primarySwatch: materialcolorBackground,
-          backgroundColor: materialcolorBackground,
+          primarySwatch: materialColorBackground,
+          backgroundColor: materialColorBackground,
           accentColor: colorText,
         ),
         home: MainPage(),
@@ -66,10 +66,11 @@ class MyApp extends StatelessWidget {
 
 class MainPage extends StatefulWidget {
   @override
-  _MainPageState createState() => _MainPageState();
+  MainPageState createState() => MainPageState();
 }
 
-class _MainPageState extends State<MainPage> {
+/// Main page with a PageView to display all other pages
+class MainPageState extends State<MainPage> {
   int selectedIndex = 0;
 
   @override

@@ -19,10 +19,12 @@ var cacheLimit = 200.0;
 
 class HomePage extends StatefulWidget {
   @override
-  _HomePageState createState() => _HomePageState();
+  HomePageState createState() => HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+/// Home Page with most Popular Images on Imgur
+/// Have a Drawer to Access User specific features (Favorites, UserPictures, Settings, Disconnection...)
+class HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
   var _isConnected = false;
   var _images = [];
@@ -34,6 +36,8 @@ class _HomePageState extends State<HomePage> {
     findPrefs();
   }
 
+  /// Get user data from phone storage and sets global variables
+  /// Tells if user is connected or not
   void findPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     final name = prefs.getString('account_username');
@@ -46,10 +50,16 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _isConnected = true;
     });
-    _refresh();
+    refresh();
+    getMature();
+  }
+
+  /// Fetch settings to tell if mature filter is activated
+  /// https://apidocs.imgur.com/?version=latest#ce57e346-3515-4381-a772-ef5ade60bdee
+  void getMature() async {
     var response = await http.get(
-      'https://api.imgur.com/3/account/me/settings',
-      headers: {HttpHeaders.authorizationHeader: 'Bearer $globalAccessToken'}
+        'https://api.imgur.com/3/account/me/settings',
+        headers: {HttpHeaders.authorizationHeader: 'Bearer $globalAccessToken'}
     );
     if (mounted) {
       setState(() {
@@ -58,10 +68,11 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _disconnect() async {
+  /// Disconnects user by clearing the phone storage of user data
+  void disconnect() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
-    await _scaffoldKey.currentState.openEndDrawer();
+    _scaffoldKey.currentState.openEndDrawer();
     globalUsername = "";
     globalAccessToken = "";
     setState(() {
@@ -70,7 +81,10 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  Future<Null> _refresh() async {
+  /// Refresh the current image list by fetching the API
+  /// Shows the most popular images on Imgur
+  /// https://apidocs.imgur.com/?version=latest#eff60e84-5781-4c12-926a-208dc4c7cc94
+  Future<Null> refresh() async {
     var response = await http.get(
       'https://api.imgur.com/3/gallery/hot/time/0?showViral=true&album_previews=false&mature=$mature',
       headers: {HttpHeaders.authorizationHeader: "Bearer $globalAccessToken"},
@@ -82,6 +96,8 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  /// Fetch the User avatar to show on AppBar
+  /// https://apidocs.imgur.com/?version=latest#6427d23d-2ad2-44e3-846d-65d7b042afbd
   Future<String> getAvatar() async {
     if (globalUsername == "") {
       return '';
@@ -94,6 +110,12 @@ class _HomePageState extends State<HomePage> {
     return data['avatar'];
   }
 
+  /// Shows the page
+  /// If connected shows
+  /// * AppBar with Avatar Button to show Drawer
+  /// * PictureList displaying all fetched images (pictureList.dart)
+  /// If not connected shows
+  /// * ConnectionPage (connection.dart)
   @override
   Widget build(BuildContext context) {
     if (_isConnected) {
@@ -105,12 +127,12 @@ class _HomePageState extends State<HomePage> {
             scrollDirection: Axis.vertical,
             headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
               return <Widget> [
-                _foldableTopAppBar()
+                foldableTopAppBar()
               ];
             },
             body: RefreshIndicator(
               color: colorBackground,
-              onRefresh: _refresh,
+              onRefresh: refresh,
               child: CustomScrollView(
                 cacheExtent: cacheLimit,
                 scrollDirection: Axis.vertical,
@@ -121,7 +143,7 @@ class _HomePageState extends State<HomePage> {
             )
           ),
         ),
-        drawer: _drawer(),
+        drawer: drawer(),
       );
     } else {
       return Scaffold(
@@ -134,7 +156,9 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Widget _foldableTopAppBar() {
+  /// AppBar that disappear when scrolling down and reappear scrolling up
+  /// Has Avatar Button to display the User drawer
+  Widget foldableTopAppBar() {
     Widget _avatarButton = Spacer();
     if (_scaffoldKey.currentState != null) {
       _avatarButton = avatarButton(_scaffoldKey.currentState.openDrawer, _avatarUrl);
@@ -153,7 +177,13 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _drawer() {
+  /// Drawer displaying user informations
+  /// * Username
+  /// * Access to User Pictures (userPictures.dart)
+  /// * Access to User Favorites (favorites.dart)
+  /// * Setting for Mature Content
+  /// * Disconnection button
+  Widget drawer() {
     Widget _avatarButton = Spacer();
     if (_scaffoldKey.currentState != null) {
       _avatarButton = avatarButton(_scaffoldKey.currentState.openEndDrawer, _avatarUrl);
@@ -212,8 +242,8 @@ class _HomePageState extends State<HomePage> {
               onTap: () async {
                 mature = !mature;
                 setState(() {});
-                _refresh();
-                var response = await http.put(
+                refresh();
+                await http.put(
                   'https://api.imgur.com/3/account/$globalUsername/settings?show_mature=$mature',
                   headers: {HttpHeaders.authorizationHeader: 'Bearer $globalAccessToken'}
                 );
@@ -222,7 +252,7 @@ class _HomePageState extends State<HomePage> {
             ListTile(
               leading: Icon(Icons.exit_to_app, color: colorText),
               title: Text('Disconnect', style: TextStyle(color: colorText, fontWeight: FontWeight.bold, fontSize: 20),),
-              onTap: _disconnect,
+              onTap: disconnect,
             ),
           ],
         ),
@@ -230,6 +260,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// AvatarButton to be used in AppBar and Drawer
   Widget avatarButton(var function, Future<String> avatar) {
     return Container(
       width: 60,

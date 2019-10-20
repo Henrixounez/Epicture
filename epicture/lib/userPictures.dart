@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:epicture/colors.dart';
 import 'package:epicture/home.dart';
@@ -11,10 +10,11 @@ import 'package:http/http.dart' as http;
 
 class UserPictures extends StatefulWidget {
   @override
-  _UserPicturesState createState() => _UserPicturesState();
+  UserPicturesState createState() => UserPicturesState();
 }
 
-class _UserPicturesState extends State<UserPictures> {
+/// Page for displaying User posted pictures
+class UserPicturesState extends State<UserPictures> {
   var _pictures = [];
 
   @override
@@ -23,8 +23,11 @@ class _UserPicturesState extends State<UserPictures> {
     getPictures();
   }
 
-
-
+  /// Fetch User Pictures from API
+  /// If have albums add them and removes alone pictures
+  /// https://apidocs.imgur.com/?version=latest#ee366f7c-69e6-46fd-bf26-e93303f64c84
+  /// https://apidocs.imgur.com/?version=latest#a9931b00-47ab-4144-b058-a15906bf3e15
+  /// https://apidocs.imgur.com/?version=latest#f57e9ff3-0d25-4804-bc53-53e9e54be813
   Future<Null> getPictures() async {
     var response = await http.get(
       'https://api.imgur.com/3/account/me/images',

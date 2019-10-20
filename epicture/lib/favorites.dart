@@ -10,10 +10,11 @@ import 'package:http/http.dart' as http;
 
 class UserFavorites extends StatefulWidget {
   @override
-  _UserFavoritesState createState() => _UserFavoritesState();
+  UserFavoritesState createState() => UserFavoritesState();
 }
 
-class _UserFavoritesState extends State<UserFavorites> {
+/// Page for displaying User Favorites
+class UserFavoritesState extends State<UserFavorites> {
   var _pictures = [];
   var _page = 0;
   var _sort = "newest";
@@ -24,6 +25,8 @@ class _UserFavoritesState extends State<UserFavorites> {
     getPictures();
   }
 
+  /// Fetch User Favorites from API
+  /// https://apidocs.imgur.com/?version=latest#a432a8e6-2ece-4544-bc7a-2999eb586f06
   Future<Null> getPictures() async {
     var response = await http.get(
       'https://api.imgur.com/3/account/$globalUsername/favorites/$_page/$_sort',
