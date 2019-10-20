@@ -4,8 +4,6 @@ import 'dart:io';
 import 'package:epicture/colors.dart';
 import 'package:epicture/home.dart';
 import 'package:epicture/image.dart';
-import 'package:epicture/main.dart';
-import 'package:epicture/search.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -15,10 +13,13 @@ class Album extends StatefulWidget {
   final images;
 
   @override
-  _AlbumState createState() => _AlbumState();
+  AlbumState createState() => AlbumState();
 }
 
-class _AlbumState extends State<Album> {
+/// Album Page
+/// * Displays all album pictures and descriptions
+/// * Tags and Comments of the album are available below the image list
+class AlbumState extends State<Album> {
   ScrollController _scrollController;
   var _comments = [];
 
@@ -29,6 +30,8 @@ class _AlbumState extends State<Album> {
     getComments();
   }
 
+  /// Fetch comments from API with album ID
+  /// https://apidocs.imgur.com/?version=latest#b95843d0-0036-4486-8e64-152338f88872
   void getComments() async {
     var response = await http.get(
       'https://api.imgur.com/3/gallery/${widget.images['id']}/comments/best',
@@ -44,8 +47,12 @@ class _AlbumState extends State<Album> {
     }
   }
 
-  void _vote(bool upvote) async {
-    String last_vote = widget.images['vote'];
+  /// Post vote on album to API
+  /// If up or down, vote accordingly
+  /// If undoing a vote, sends veto
+  /// https://apidocs.imgur.com/?version=latest#23e5f110-318a-4872-9888-1bb1f864b360
+  void vote(bool upvote) async {
+    String lastVote = widget.images['vote'];
     String vote = "up";
     if (!upvote) {
       vote = "down";
@@ -53,13 +60,13 @@ class _AlbumState extends State<Album> {
     if (vote == widget.images['vote']) {
       vote = "veto";
     }
-    await http.post('https://api.imgur.com/3/gallery/${widget.images['id']}/vote/${vote}',
+    await http.post('https://api.imgur.com/3/gallery/${widget.images['id']}/vote/$vote',
         headers: {HttpHeaders.authorizationHeader: 'Bearer $globalAccessToken'});
     setState(() {
       widget.images['vote'] = vote;
-      if (last_vote == "up")
+      if (lastVote == "up")
         widget.images['ups']--;
-      if (last_vote == "down")
+      if (lastVote == "down")
         widget.images['downs']--;
       if (vote == "up")
         widget.images['ups']++;
@@ -68,7 +75,12 @@ class _AlbumState extends State<Album> {
     });
   }
 
-  void _favImage() async {
+  /// Favorites an Image or Album.
+  /// Undoing a favorite is handled by the API.
+  /// Modify the state for the Favorite Icon to be of the right type
+  /// https://apidocs.imgur.com/?version=latest#31c72664-59c1-426f-98d7-ac7ad6547cc2
+  /// https://apidocs.imgur.com/?version=latest#5dd1c471-a806-43cb-9067-f5e4fc8f28bd
+  void favImage() async {
     if (widget.images['is_album']) {
       await http.post('https://api.imgur.com/3/album/${widget.images['id']}/favorite',
           headers: {HttpHeaders.authorizationHeader: 'Bearer $globalAccessToken'});
@@ -81,6 +93,12 @@ class _AlbumState extends State<Album> {
     });
   }
 
+  /// AppBar has action buttons for Voting or Favorite
+  /// ScrollView with in order :
+  ///    Album title, description, poster username and date of post
+  ///    Picture list (AlbumPicture)
+  ///    Tags List
+  ///    Comments (AlbumComments)
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -88,9 +106,9 @@ class _AlbumState extends State<Album> {
       appBar: AppBar(
         backgroundColor: colorBottomAppBar,
         actions: <Widget>[
-          MaterialButton(minWidth: 0, onPressed: () {_vote(true); }, child: Icon(Icons.keyboard_arrow_up, color: (widget.images['vote'] == 'up') ? Colors.green : colorMetrics, size: 30,)),
-          MaterialButton(minWidth: 0, onPressed: () {_vote(false);}, child: Icon(Icons.keyboard_arrow_down, color: (widget.images['vote'] == 'down') ? Colors.red : colorMetrics, size: 30)),
-          MaterialButton(minWidth: 0, onPressed: () {_favImage(); }, child: widget.images['favorite'] ? Icon(Icons.favorite, color: colorFavorite,) : Icon(Icons.favorite_border, color: colorMetrics,)),
+          MaterialButton(minWidth: 0, onPressed: () {vote(true); }, child: Icon(Icons.keyboard_arrow_up, color: (widget.images['vote'] == 'up') ? Colors.green : colorMetrics, size: 30,)),
+          MaterialButton(minWidth: 0, onPressed: () {vote(false);}, child: Icon(Icons.keyboard_arrow_down, color: (widget.images['vote'] == 'down') ? Colors.red : colorMetrics, size: 30)),
+          MaterialButton(minWidth: 0, onPressed: () {favImage(); }, child: widget.images['favorite'] ? Icon(Icons.favorite, color: colorFavorite,) : Icon(Icons.favorite_border, color: colorMetrics,)),
         ],
       ),
       body: CustomScrollView(
@@ -118,7 +136,7 @@ class _AlbumState extends State<Album> {
             AlbumPicture(data: widget.images),
             SliverToBoxAdapter(
               child: widget.images['tags'] != null ? (Wrap(
-                children: widget.images['tags'].map<Widget>((tag) { return _tag(tag); }).toList()
+                children: widget.images['tags'].map<Widget>((tag) { return tagCard(tag); }).toList()
               )) : Text('')
             ),
             SliverToBoxAdapter(
@@ -130,7 +148,8 @@ class _AlbumState extends State<Album> {
     );
   }
 
-  Widget _tag(tagData) {
+  /// Creates a Tag card with background and name
+  Widget tagCard(tagData) {
     return Container(
       margin: EdgeInsets.symmetric(vertical: 5, horizontal: 5),
       padding: EdgeInsets.all(10),
@@ -164,19 +183,23 @@ class AlbumPicture extends StatefulWidget {
   const AlbumPicture({Key key, this.data}) : super(key: key);
   final data;
 
-  _AlbumPictureState createState() => _AlbumPictureState();
+  AlbumPictureState createState() => AlbumPictureState();
 }
 
-class _AlbumPictureState extends State<AlbumPicture> {
+/// Pictures for Album
+/// * Creates a list of Pictures to be used in Album Class
+class AlbumPictureState extends State<AlbumPicture> {
   var _data = {};
 
   @override
   void initState() {
     super.initState();
-    _fetchData();
+    fetchData();
   }
 
-  void _fetchData() async {
+  /// Fetch album images data from API
+  /// https://apidocs.imgur.com/?version=latest#5369b915-ad8b-47b1-b44b-8e2561e41cee
+  void fetchData() async {
     var hash = widget.data['id'];
     var response = await http.get(
       'https://api.imgur.com/3/album/$hash',
@@ -189,6 +212,8 @@ class _AlbumPictureState extends State<AlbumPicture> {
     }
   }
 
+  /// Creates a list of Images using ImageLoader (image.dart)
+  /// Additional info in list with image title and description
   @override
   Widget build(BuildContext context) {
     if (_data == null || _data['images'] == null) {
@@ -221,10 +246,13 @@ class AlbumComments extends StatefulWidget {
   final comments;
   final depth;
 
-  _AlbumCommentsState createState() => _AlbumCommentsState();
+  AlbumCommentsState createState() => AlbumCommentsState();
 }
 
-class _AlbumCommentsState extends State<AlbumComments> {
+/// Comments for Album
+/// * Creates a list of Comments to be used in Album Class or in an other AlbumComments Class
+/// * Recursively called when comments replies are expanded
+class AlbumCommentsState extends State<AlbumComments> {
   List<bool> showChildren;
 
   @override
@@ -232,6 +260,7 @@ class _AlbumCommentsState extends State<AlbumComments> {
     super.initState();
   }
 
+  /// Creates a list of Comments for comments list in data
   @override
   Widget build(BuildContext context) {
     if (showChildren == null || showChildren.isEmpty) {
@@ -260,56 +289,15 @@ class _AlbumCommentsState extends State<AlbumComments> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Wrap(
-                    children: <Widget>[
-                      Text(widget.comments[index]['author'], style: TextStyle(color: colorText, fontSize: 15, fontWeight: FontWeight.bold),),
-                      VerticalDivider(),
-                      Text(getTimeago(widget.comments[index]['datetime']), style: TextStyle(color: colorFadedText, fontSize: 14),),
-                      VerticalDivider(),
-                      Text('${widget.comments[index]['points']} pts', style: TextStyle(color: colorFadedText, fontSize: 14),),
-                    ],
-                  ),
+                  header(index),
                   Divider(height: 3,),
                   Text(widget.comments[index]['comment'], style: TextStyle(color: colorText, fontSize: 14),),
                   Divider(height: 5,),
                   showChildren[index] ? (
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        InkWell(
-                          child: Container(
-                            padding: EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-                            child: Text('Close', style: TextStyle(color: colorMetrics, fontSize: 14)),
-                            decoration: BoxDecoration(
-                              color: colorMiddle,
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                          ),
-                          onTap: () {setState(() {if (widget.comments[index]['children'] != null && widget.comments[index]['children'].length > 0) showChildren[index] = !showChildren[index];});},
-                        ),
-                        CustomScrollView(
-                          physics: NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          scrollDirection: Axis.vertical,
-                          slivers: <Widget>[
-                            AlbumComments(comments: widget.comments[index]['children'], depth: widget.depth + 1,)
-                          ],
-                        ),
-                      ],
-                    )
+                    children(index)
                   ) : (
                     (widget.comments[index]['children'] != null && widget.comments[index]['children'].length > 0) ? (
-                      InkWell(
-                        child: Container(
-                          padding: EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-                          child: Text('${widget.comments[index]['children'].length} replies', style: TextStyle(color: colorMetrics, fontSize: 14)),
-                          decoration: BoxDecoration(
-                            color: colorMiddle,
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                        ),
-                        onTap: () {setState(() {if (widget.comments[index]['children'] != null && widget.comments[index]['children'].length > 0) showChildren[index] = !showChildren[index];});},
-                      )
+                    showButton(index)
                     ) : (
                       Text('')
                     )
@@ -321,6 +309,74 @@ class _AlbumCommentsState extends State<AlbumComments> {
         },
         childCount: widget.comments.length,
       )
+    );
+  }
+
+  /// Header of comment with author username, date of post and points
+  Widget header(index) {
+    return Wrap(
+      children: <Widget>[
+        Text(widget.comments[index]['author'], style: TextStyle(color: colorText, fontSize: 15, fontWeight: FontWeight.bold),),
+        VerticalDivider(),
+        Text(getTimeago(widget.comments[index]['datetime']), style: TextStyle(color: colorFadedText, fontSize: 14),),
+        VerticalDivider(),
+        Text('${widget.comments[index]['points']} pts', style: TextStyle(color: colorFadedText, fontSize: 14),),
+      ],
+    );
+  }
+
+  /// Displaying of comments children by calling recursively AlbumComments class
+  /// Have a close button to hide children
+  Widget children(index) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        InkWell(
+          child: Container(
+            padding: EdgeInsets.symmetric(vertical: 5, horizontal: 5),
+            child: Text('Close', style: TextStyle(color: colorMetrics, fontSize: 14)),
+            decoration: BoxDecoration(
+              color: colorMiddle,
+              borderRadius: BorderRadius.circular(5),
+            ),
+          ),
+          onTap: () {
+            setState(() {
+              if (widget.comments[index]['children'] != null && widget.comments[index]['children'].length > 0)
+                showChildren[index] = !showChildren[index];
+            });
+          },
+        ),
+        CustomScrollView(
+          physics: NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          scrollDirection: Axis.vertical,
+          slivers: <Widget>[
+            AlbumComments(comments: widget.comments[index]['children'], depth: widget.depth + 1,)
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// If comment have children, display a button with number of replies
+  /// When button is tapped, displays comment children
+  Widget showButton(index) {
+    return InkWell(
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 5, horizontal: 5),
+        child: Text('${widget.comments[index]['children'].length} replies', style: TextStyle(color: colorMetrics, fontSize: 14)),
+        decoration: BoxDecoration(
+          color: colorMiddle,
+          borderRadius: BorderRadius.circular(5),
+        ),
+      ),
+      onTap: () {
+        setState(() {
+          if (widget.comments[index]['children'] != null && widget.comments[index]['children'].length > 0)
+            showChildren[index] = !showChildren[index];
+        });
+      },
     );
   }
 }

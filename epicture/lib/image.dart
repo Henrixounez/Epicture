@@ -13,6 +13,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 var loaded = 0;
 
+/// Returns formatted string showing time of upload relative to now
 String getTimeago(date) {
   if (date == null)
     return '';
@@ -27,10 +28,11 @@ class ImgurImage extends StatefulWidget {
   const ImgurImage({Key key, @required this.data}) : super(key: key);
   final data;
 
-  _ImgurImageState createState() => _ImgurImageState();
+  ImgurImageState createState() => ImgurImageState();
 }
 
-class _ImgurImageState extends State<ImgurImage> {
+/// ImgurImage used for displaying Images with more information
+class ImgurImageState extends State<ImgurImage> {
   var data = {};
   Future<String> avatarUrl;
   bool gotAvatar = false;
@@ -52,13 +54,15 @@ class _ImgurImageState extends State<ImgurImage> {
     }
   }
 
+  /// Fetch more information about an Image or Album
+  /// https://apidocs.imgur.com/?version=latest#5369b915-ad8b-47b1-b44b-8e2561e41cee
   void getData() async {
     var hash = widget.data['id'];
+    var response = await http.get(
+      'https://api.imgur.com/3/album/$hash',
+      headers: {HttpHeaders.authorizationHeader: "Bearer $globalAccessToken"},
+    );
     if (widget.data['is_album'] == true) {
-      var response = await http.get(
-        'https://api.imgur.com/3/album/$hash',
-        headers: {HttpHeaders.authorizationHeader: "Bearer $globalAccessToken"},
-      );
       if (mounted) {
         setState(() {
           data = jsonDecode(response.body)['data'];
@@ -66,10 +70,6 @@ class _ImgurImageState extends State<ImgurImage> {
         });
       }
     } else {
-      var response = await http.get(
-        'https://api.imgur.com/3/album/$hash',
-        headers: {HttpHeaders.authorizationHeader: "Bearer $globalAccessToken"},
-      );
       if (mounted) {
         setState(() {
           data['images'] = {jsonDecode(response.body)};
@@ -103,81 +103,9 @@ class _ImgurImageState extends State<ImgurImage> {
           ),
           child: Column(
             children: <Widget>[
-              InkWell(
-                onTap: () {if (data['is_album'] != null && data['is_album']) Navigator.push(context, MaterialPageRoute(builder: (context) => Album(key: ValueKey(data['id']), images: data)));},
-                child: Container(
-                  padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                  child: Column(
-                    children: <Widget>[
-                      Row(
-                        children: <Widget>[
-                          FutureBuilder(
-                            future: avatarUrl,
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState == ConnectionState.done) {
-                                return ClipRRect(
-                                  borderRadius: BorderRadius.all(Radius.circular(100)),
-                                  child: Image.network(
-                                    snapshot.data,
-                                    width: 40,
-                                    height: 40,
-                                  ),
-                                );
-                              } else {
-                                return CircularProgressIndicator();
-                              }
-                            },
-                          ),
-                          VerticalDivider(),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Text(
-                                  title,
-                                  style: TextStyle(color: colorText, fontWeight: FontWeight.w800, fontSize: 15),
-                                  textAlign: TextAlign.left,
-                                ),
-                                Text(
-                                  username + ' • ' + getTimeago(data['datetime']) + getAlbum() + getSection(),
-                                  style: TextStyle(color: colorFadedText),
-                                  textAlign: TextAlign.left,
-                                ),
-                              ],
-                            )
-                          ),
-                          FloatingActionButton(
-                            heroTag: null,
-                            elevation: 0,
-                            backgroundColor: colorImageBackground,
-                            onPressed: _favImage,
-                            child: data['favorite'] ? Icon(Icons.favorite, color: colorFavorite,) : Icon(Icons.favorite_border, color: colorMetrics,),
-                          )
-                        ],
-                      ),
-                      Divider(color: Colors.transparent, height: 5,),
-                    ],
-                  )
-                ),
-              ),
-              InkWell(
-                onTap: () {Navigator.push(context, MaterialPageRoute(builder: (context) => BigPicture(data: data)));},
-                child: ImageLoader(data: data, index: 0,),
-              ),
-              Column(
-                children: <Widget>[
-                  Container(
-                    padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                    child: Row(
-                      children: <Widget>[
-                        metric(data['views'], Icon(Icons.remove_red_eye, color: colorMetrics,)),
-                        metric_button(data['ups'], Icon(Icons.keyboard_arrow_up, color: (data['vote'] == 'up') ? Colors.green : colorMetrics, size: 30,), () {_vote(true);}),
-                        metric_button(data['downs'], Icon(Icons.keyboard_arrow_down, color: (data['vote'] == 'down') ? Colors.red : colorMetrics, size: 30), () {_vote(false);}),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+              header(title, username),
+              image(),
+              footer(),
             ],
           )
         ),
@@ -186,7 +114,114 @@ class _ImgurImageState extends State<ImgurImage> {
     );
   }
 
-  void _favImage() async {
+  /// Image header with information
+  /// * Poster Avatar
+  /// * Title
+  /// * Poster Username
+  /// * Time of post
+  /// * Is album
+  /// Favorite button
+  /// On click, open the album
+  Widget header(title, username) {
+    return InkWell(
+      onTap: () {
+        if (data['is_album'] != null && data['is_album'])
+          Navigator.push(context, MaterialPageRoute(builder: (context) => Album(key: ValueKey(data['id']), images: data)));
+      },
+      child: Container(
+          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+          child: Column(
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  FutureBuilder(
+                    future: avatarUrl,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.done) {
+                        return ClipRRect(
+                          borderRadius: BorderRadius.all(Radius.circular(100)),
+                          child: Image.network(
+                            snapshot.data,
+                            width: 40,
+                            height: 40,
+                          ),
+                        );
+                      } else {
+                        return CircularProgressIndicator();
+                      }
+                    },
+                  ),
+                  VerticalDivider(),
+                  Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            title,
+                            style: TextStyle(color: colorText, fontWeight: FontWeight.w800, fontSize: 15),
+                            textAlign: TextAlign.left,
+                          ),
+                          Text(
+                            username + ' • ' + getTimeago(data['datetime']) + getAlbum() + getSection(),
+                            style: TextStyle(color: colorFadedText),
+                            textAlign: TextAlign.left,
+                          ),
+                        ],
+                      )
+                  ),
+                  FloatingActionButton(
+                    heroTag: null,
+                    elevation: 0,
+                    backgroundColor: colorImageBackground,
+                    onPressed: favImage,
+                    child: data['favorite'] ? Icon(Icons.favorite, color: colorFavorite,) : Icon(Icons.favorite_border, color: colorMetrics,),
+                  )
+                ],
+              ),
+              Divider(color: Colors.transparent, height: 5,),
+            ],
+          )
+      ),
+    );
+  }
+
+  /// Display image using ImageLoader
+  /// On click open the image fullscreen with BigPicture
+  Widget image() {
+    return InkWell(
+      onTap: () {Navigator.push(context, MaterialPageRoute(builder: (context) => BigPicture(data: data)));},
+      child: ImageLoader(data: data, index: 0,),
+    );
+  }
+
+  /// Image footer with information
+  /// * Metric of views
+  /// * Metric of upvotes
+  /// * Metric of downvotes
+  /// Voting by clicking on upvote or downvote
+  Widget footer() {
+    return Column(
+      children: <Widget>[
+        Container(
+          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+          child: Row(
+            children: <Widget>[
+              metric(data['views'], Icon(Icons.remove_red_eye, color: colorMetrics,)),
+              metricButton(data['ups'], Icon(Icons.keyboard_arrow_up, color: (data['vote'] == 'up') ? Colors.green : colorMetrics, size: 30,), () {vote(true);}),
+              metricButton(data['downs'], Icon(Icons.keyboard_arrow_down, color: (data['vote'] == 'down') ? Colors.red : colorMetrics, size: 30), () {vote(false);}),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Favorites an Image or Album.
+  /// Undoing a favorite is handled by the API.
+  /// Modify the state for the Favorite Icon to be of the right type
+  /// https://apidocs.imgur.com/?version=latest#31c72664-59c1-426f-98d7-ac7ad6547cc2
+  /// https://apidocs.imgur.com/?version=latest#5dd1c471-a806-43cb-9067-f5e4fc8f28bd
+  void favImage() async {
     if (data['is_album']) {
       await http.post('https://api.imgur.com/3/album/${data['id']}/favorite',
       headers: {HttpHeaders.authorizationHeader: 'Bearer $globalAccessToken'});
@@ -199,9 +234,12 @@ class _ImgurImageState extends State<ImgurImage> {
     });
   }
 
-
-  void _vote(bool upvote) async {
-    String last_vote = data['vote'];
+  /// Post vote on album to API
+  /// If up or down, vote accordingly
+  /// If undoing a vote, sends veto
+  /// https://apidocs.imgur.com/?version=latest#23e5f110-318a-4872-9888-1bb1f864b360
+  void vote(bool upvote) async {
+    String lastVote = data['vote'];
     String vote = "up";
     if (!upvote) {
       vote = "down";
@@ -209,13 +247,13 @@ class _ImgurImageState extends State<ImgurImage> {
     if (vote == data['vote']) {
       vote = "veto";
     }
-    await http.post('https://api.imgur.com/3/gallery/${data['id']}/vote/${vote}',
+    await http.post('https://api.imgur.com/3/gallery/${data['id']}/vote/$vote',
     headers: {HttpHeaders.authorizationHeader: 'Bearer $globalAccessToken'});
     setState(() {
       data['vote'] = vote;
-      if (last_vote == "up")
+      if (lastVote == "up")
         data['ups']--;
-      if (last_vote == "down")
+      if (lastVote == "down")
         data['downs']--;
       if (vote == "up")
         data['ups']++;
@@ -224,6 +262,8 @@ class _ImgurImageState extends State<ImgurImage> {
     });
   }
 
+  /// Finds title of image
+  /// If not available gives description
   String getTitle() {
     if (data['title'] != null) {
       return data['title'];
@@ -234,6 +274,8 @@ class _ImgurImageState extends State<ImgurImage> {
     return ' ';
   }
 
+  /// Fetch Avatar of the uploader to show on header
+  /// https://apidocs.imgur.com/?version=latest#6427d23d-2ad2-44e3-846d-65d7b042afbd
   Future<String> getAvatar() async {
     if (widget.data['account_url'] == null) {
       return '';
@@ -251,6 +293,7 @@ class _ImgurImageState extends State<ImgurImage> {
     return data['avatar'];
   }
 
+  /// Find image section if available
   String getSection() {
     if (data['section'] != null && data['section'] != '')
       return (' / ' + data['section']);
@@ -258,6 +301,7 @@ class _ImgurImageState extends State<ImgurImage> {
       return '';
   }
 
+  /// Find if is an album
   String getAlbum() {
     if (data['is_album'] != null) {
       return ' • Album';
@@ -265,7 +309,9 @@ class _ImgurImageState extends State<ImgurImage> {
       return '';
     }
   }
-  Widget metric_button(int nb, Icon icon, function) {
+
+  /// Widget for metrics with interaction (Used by Upvotes or Downvotes)
+  Widget metricButton(int nb, Icon icon, function) {
     if (nb != null) {
       return Expanded(
         child: FlatButton(
@@ -285,6 +331,7 @@ class _ImgurImageState extends State<ImgurImage> {
     }
   }
 
+  /// Widget for metrics
   Widget metric(int nb, Icon icon) {
     if (nb != null) {
       return Expanded(
@@ -308,10 +355,11 @@ class ImageLoader extends StatefulWidget {
   final data;
   final int index;
 
-  _ImageLoaderState createState() => _ImageLoaderState();
+  ImageLoaderState createState() => ImageLoaderState();
 }
 
-class _ImageLoaderState extends State<ImageLoader> {
+/// Class for asynchronous Image or Video Loading
+class ImageLoaderState extends State<ImageLoader> {
   Future<String> imgUrl;
   VideoPlayerController _videoController;
   bool _videoLoaded = false;
@@ -346,50 +394,72 @@ class _ImageLoaderState extends State<ImageLoader> {
     }
     return FutureBuilder(
       future: imgUrl,
-      builder: (context, snapshot) {
-        var width = widget.data['width'];
-        var height = widget.data['height'];
-        if (width == null || height == null) {
-          width = widget.data['cover_width'];
-          height = widget.data['cover_height'];
-        }
-        if (widget.data.isEmpty) {
-          return Text('');
-        }
-        var neededHeight = height / (width / MediaQuery.of(context).size.width);
-        if (width < MediaQuery.of(context).size.width)
-          neededHeight = height.toDouble();
-        if (snapshot.connectionState == ConnectionState.done && snapshot.data != null) {
-          if (!snapshot.data.toString().endsWith('.mp4')) {
-            return Container(
-              height: neededHeight,
-              child: CachedNetworkImage(
-                filterQuality: FilterQuality.none,
-                imageUrl: snapshot.data,
-                placeholder: (context, url) => Center(child: CircularProgressIndicator()),
-                errorWidget: (context, url, error) => Icon(Icons.error),
-              )
-            );
-          } else {
-            if (_videoLoaded && _videoController != null) {
-              return MyVideoPlayer(controller: _videoController, height: neededHeight,);
-            } else {
-              return Container(
-                  height: neededHeight,
-                  child: Icon(Icons.play_circle_outline, color: colorText, size: 50,)
-              );
-            }
-          }
-        } else {
-          return Container(
-              height: neededHeight,
-              child: Center(child: CircularProgressIndicator())
-          );
-        }
-      },
+      builder: imageBuilder
     );
   }
 
+  /// ImageBuilder used in FutureBuilder
+  /// When loading displays a CircularProgressIndicator
+  /// Save needed height when loading to prevent list to list shift after loading
+  /// Upon data loaded displays either
+  /// * an Image using CachedNetworkImage
+  /// * a Video using MyVideoPlayer
+  Widget imageBuilder(context, snapshot) {
+    var neededHeight = findNeededHeight();
+    if (neededHeight == -1)
+      return Text('');
+    if (snapshot.connectionState == ConnectionState.done && snapshot.data != null) {
+      if (!snapshot.data.toString().endsWith('.mp4')) {
+        return Container(
+            height: neededHeight,
+            child: CachedNetworkImage(
+              filterQuality: FilterQuality.none,
+              imageUrl: snapshot.data,
+              placeholder: (context, url) => Center(child: CircularProgressIndicator()),
+              errorWidget: (context, url, error) => Icon(Icons.error),
+            )
+        );
+      } else {
+        if (_videoLoaded && _videoController != null) {
+          return MyVideoPlayer(controller: _videoController, height: neededHeight,);
+        } else {
+          return Container(
+              height: neededHeight,
+              child: Icon(Icons.play_circle_outline, color: colorText, size: 50,)
+          );
+        }
+      }
+    } else {
+      return Container(
+          height: neededHeight,
+          child: Center(child: CircularProgressIndicator())
+      );
+    }
+  }
+
+  /// Finds neededHeight to save upon width and height
+  /// If width is larger than phone width, calculate the ratio to apply for the needed height
+  double findNeededHeight() {
+    var width = widget.data['width'];
+    var height = widget.data['height'];
+
+    if (width == null || height == null) {
+      width = widget.data['cover_width'];
+      height = widget.data['cover_height'];
+    }
+    if (widget.data.isEmpty) {
+      return -1;
+    }
+    var neededHeight = height / (width / MediaQuery.of(context).size.width);
+    if (width < MediaQuery.of(context).size.width)
+      neededHeight = height.toDouble();
+    return neededHeight;
+  }
+
+  /// Finds the image or video link
+  /// If not available search more info of Image on API
+  /// https://apidocs.imgur.com/?version=latest#2078c7e0-c2b8-4bc8-a646-6e544b087d0f
+  /// If a video sets up the videoController to be displayed by MyVideoPlayer
   Future<String> getImg() async {
     if (widget.data == null) {
       return '';
@@ -403,7 +473,7 @@ class _ImageLoaderState extends State<ImageLoader> {
           if (link == null || link == '') {
             link = widget.data['images'][widget.index]['mp4'];
           }
-          var __videoController = await new VideoPlayerController.network(link)..initialize();
+          var __videoController = new VideoPlayerController.network(link)..initialize();
           setState(() {
             _videoController = __videoController;
             _videoLoaded = true;
@@ -432,10 +502,12 @@ class MyVideoPlayer extends StatefulWidget {
   final VideoPlayerController controller;
   final double height;
 
-  _VideoPlayerState createState() => _VideoPlayerState();
+  VideoPlayerState createState() => VideoPlayerState();
 }
 
-class _VideoPlayerState extends State<MyVideoPlayer> {
+/// Video Displayer with additional buttons for sound and play/pause
+/// Video is loaded with VideoPlayer plugin
+class VideoPlayerState extends State<MyVideoPlayer> {
   bool displayButtons = true;
   bool paused = true;
   bool sound = false;
@@ -474,6 +546,7 @@ class _VideoPlayerState extends State<MyVideoPlayer> {
     );
   }
 
+  /// Sound button to mute the video
   void soundButton() {
     if (sound) {
       widget.controller.setVolume(0);
@@ -485,6 +558,7 @@ class _VideoPlayerState extends State<MyVideoPlayer> {
     });
   }
 
+  /// Play button to stop or play the video
   void playButton() {
     if (paused) {
       widget.controller.play();
@@ -497,6 +571,8 @@ class _VideoPlayerState extends State<MyVideoPlayer> {
   }
 }
 
+/// Displays a picture or video fullscreen
+/// Closes with a gesture
 class BigPicture extends StatelessWidget {
   const BigPicture({Key key, this.data}) : super(key: key);
   final data;

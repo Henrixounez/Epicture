@@ -6,9 +6,22 @@ It was made with Flutter and uses Imgur official API.
 This documentation covers UX / UI, Imgur interaction and will explain some of the choices we have made during development.
 
 ## Usage
-To build the application, simple use the following command in the **epicture** directory :
 
-`flutter build epicture`
+### How to build
+```
+export PATH="$PATH":"/.../flutter/bin/"
+flutter build apk
+flutter build ios
+```
+
+### How to generate docs
+```
+flutter pub global activate dartdoc
+export PATH="$PATH":"/.../flutter/bin/cache/dart-sdk/bin/"
+export PATH="$PATH":"/.../flutter/.pub-cache/bin"
+dartdoc
+```
+
 
 ----
 

@@ -9,16 +9,20 @@ import 'package:uni_links/uni_links.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 class ConnectionPage extends StatefulWidget {
   const ConnectionPage({Key key, @required this.parent}) : super(key: key);
   final parent;
 
   @override
-  _ConnectionPageState createState() => _ConnectionPageState();
+  ConnectionPageState createState() => ConnectionPageState();
 }
 
-class _ConnectionPageState extends State<ConnectionPage> {
+/// Connection Page for user login
+/// * Default Page when user is not connected
+/// * Connects the user and saves his data
+/// * Imgur Site will redirect to app with DeepLink for data fetching
+class ConnectionPageState extends State<ConnectionPage> {
+  /// https://apidocs.imgur.com/?version=latest#authorization-and-oauth
   static String url = 'https://api.imgur.com/oauth2/authorize?client_id=$globalClientId&response_type=token&state=login_token';
   StreamSubscription _sub;
 
@@ -39,6 +43,8 @@ class _ConnectionPageState extends State<ConnectionPage> {
     await initUniLinks();
   }
 
+  /// Parses the URL into an array of data
+  /// Saves the user data in phone storage
   Future<void> getLink(String url) async {
     url = url.replaceFirst('#', '&');
     Uri uri = Uri.parse(url);
@@ -51,6 +57,7 @@ class _ConnectionPageState extends State<ConnectionPage> {
     widget.parent.setState((){widget.parent.findPrefs();});
   }
 
+  /// Initialise DeepLinking listener
   Future<Null> initUniLinks() async {
     try {
       String initialLink = await getInitialLink();
@@ -67,6 +74,8 @@ class _ConnectionPageState extends State<ConnectionPage> {
     });
   }
 
+  /// Displays a button to login
+  /// Redirects to imgur site for user to login
   @override
   Widget build(BuildContext context) {
     return Scaffold(
