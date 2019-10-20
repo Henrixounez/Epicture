@@ -31,6 +31,7 @@ IconData getCameraLensIcon(CameraLensDirection direction) {
 void logError(String code, String message) =>
     print('Error: $code\nError Message: $message');
 
+/// Generates a view with a interactive camera.
 class CameraExampleHomeState extends State<CameraExampleHome>
     with WidgetsBindingObserver {
   CameraController controller;
@@ -43,6 +44,7 @@ class CameraExampleHomeState extends State<CameraExampleHome>
   VoidCallback videoPlayerListener;
   bool enableAudio = true;
 
+  /// On initState, select the back camera by default and init internals according to it
   @override
   void initState() {
     super.initState();
@@ -58,12 +60,14 @@ class CameraExampleHomeState extends State<CameraExampleHome>
     }
   }
 
+  /// Remove observer for Camera state
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
+  /// If app is refreshed, refresh camera as well
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // App state changed before we got the chance to initialize.
@@ -79,8 +83,14 @@ class CameraExampleHomeState extends State<CameraExampleHome>
     }
   }
 
+  /// A global key to handle scaffold
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  /// Builds the camera view in order :
+  ///   The camera view
+  ///   The galery button
+  ///   The takePicture button
+  ///   The Switch camera button
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -187,10 +197,12 @@ class CameraExampleHomeState extends State<CameraExampleHome>
   }
   String timestamp() => DateTime.now().millisecondsSinceEpoch.toString();
 
+  /// Show a notification in SnackBar
   void showInSnackBar(String message) {
     _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text(message)));
   }
 
+  /// When switching cameras, set the cameras setings and tests if no errors occured
   void onNewCameraSelected(CameraDescription cameraDescription) async {
     if (controller != null) {
       await controller.dispose();
@@ -220,6 +232,7 @@ class CameraExampleHomeState extends State<CameraExampleHome>
     }
   }
 
+  /// Take a picture and calls the editor
   void onTakePictureButtonPressed() {
     takePicture().then((String filePath) {
       onPictureTaken(filePath);
@@ -228,11 +241,11 @@ class CameraExampleHomeState extends State<CameraExampleHome>
           oldImagePath = imagePath;
           imagePath = filePath;
         });
-//        if (filePath != null) showInSnackBar('Picture saved to $filePath');
       }
     });
   }
 
+  /// Switch cameras using Camera view state
   void onCameraSwitchButtonPressed() {
     if (actualCamera.lensDirection == CameraLensDirection.back) {
       onNewCameraSelected(frontCamera);
@@ -243,17 +256,20 @@ class CameraExampleHomeState extends State<CameraExampleHome>
     }
   }
 
+  /// Get image path chosen in galery
   Future<String> getImage() async {
     File _image = await ImagePicker.pickImage(source: ImageSource.gallery);
 
     return _image.path;
   }
 
+  /// Calls uploader after chosing a picture in gallery
   void onGalleryButtonPressed() async {
     String path = await getImage();
     onUploadPressed(path);
   }
 
+  /// Calls the Editor
   void onPictureTaken(String tmpImagePath) {
     Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (BuildContext context) {
@@ -265,6 +281,7 @@ class CameraExampleHomeState extends State<CameraExampleHome>
     ));
   }
 
+  /// Save the selected picture and check if no errors occured
   Future<String> takePicture() async {
     if (!controller.value.isInitialized) {
       showInSnackBar('Error: select a camera first.');
@@ -289,15 +306,18 @@ class CameraExampleHomeState extends State<CameraExampleHome>
     return filePath;
   }
 
+  /// Debug function
   void _showCameraException(CameraException e) {
     logError(e.code, e.description);
     showInSnackBar('Error: ${e.code}\n${e.description}');
   }
 
+  /// Callback for Editor
   updateOldImagePath() => setState(() {
     imagePath = oldImagePath;
   });
 
+  /// Calls the Uploader
   void onUploadPressed(imagePath) {
     Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (BuildContext context) {

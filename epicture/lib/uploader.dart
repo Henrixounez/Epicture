@@ -12,6 +12,7 @@ import 'colors.dart';
 import 'animation.dart';
 import 'imageAlbumUpload.dart';
 
+/// An enum used to define PrivacySettings
 enum PrivacySettings { public, hidden, secret }
 
 class UploaderFlutter extends StatefulWidget {
@@ -23,6 +24,9 @@ class UploaderFlutter extends StatefulWidget {
   UploadFlutterState createState() => UploadFlutterState();
 }
 
+/// The Uploader class.
+/// Contains all uploading logic.
+/// Displays a page with title, pictures and actions
 class UploadFlutterState extends State<UploaderFlutter> {
   final TextEditingController _tecTitle = new TextEditingController();
 //  final TextEditingController _tecDescription = new TextEditingController();
@@ -43,6 +47,11 @@ class UploadFlutterState extends State<UploaderFlutter> {
     imagesAlbum = [(ImageAlbumUpload(imagePath: widget.imagePath,))];
   }
 
+  /// Listview with in order:
+  ///   TextField to get title
+  ///   DropdownButton to chose privacy setting
+  ///   A list of imageAlbumUploaded generated with a map
+  ///   A FlatButton to add more images
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -134,6 +143,11 @@ class UploadFlutterState extends State<UploaderFlutter> {
     );
   }
 
+  /// Uploads a image to imgur
+  /// image: The image to be uploaded
+  /// multi: Is this image uploading in a album ?
+  /// albumToken: The Album ID
+  /// https://apidocs.imgur.com/?version=latest#c85c9dfc-7487-4de2-9ecd-66f727cf3139
   Future<http.Response> _imageUpload(ImageAlbumUpload image, bool multi, String albumToken) async {
     String title = _tecTitle.text;
     String description = image.tecDescription.text;
@@ -157,6 +171,8 @@ class UploadFlutterState extends State<UploaderFlutter> {
     return response;
   }
 
+  /// Uploads a single image to Imgur
+  /// Calls _imageUpload.
   void _soloImageUpload(ImageAlbumUpload image) async {
     GlobalKey<TestState> key = GlobalKey<TestState>();
     Navigator.of(context).push(
@@ -182,6 +198,9 @@ class UploadFlutterState extends State<UploaderFlutter> {
     }
   }
 
+  /// Uploads an album to imgur
+  /// Calls _imageUpload multiple time.
+  /// https://apidocs.imgur.com/?version=latest#8f89bd41-28a1-4624-9393-95e12cec509a
   void _onAlbumUpload() async {
     GlobalKey<TestState> key = GlobalKey<TestState>();
     Navigator.of(context).push(
@@ -216,6 +235,7 @@ class UploadFlutterState extends State<UploaderFlutter> {
     }
   }
 
+  /// FAB upload callback. Will call solo / album upload according to Uploader state
   void _onfabUploadPressed() async {
     if (loading) {
       return;
@@ -230,6 +250,7 @@ class UploadFlutterState extends State<UploaderFlutter> {
     }
   }
 
+  /// Opens the gallery and get the path to the chosen image
   Future<String> getImage() async {
     File _image = await ImagePicker.pickImage(source: ImageSource.gallery);
 
@@ -237,7 +258,8 @@ class UploadFlutterState extends State<UploaderFlutter> {
   }
 }
 
-
+/// A class that generates a FAB that will call the uploader.
+/// Usable anywhere in the app
 class UploaderFAB extends StatelessWidget {
   final String imagePath;
   final Color backgroundColor;

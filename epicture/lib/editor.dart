@@ -14,6 +14,9 @@ class PictureEditor extends StatefulWidget {
   _PictureEditorState createState() => _PictureEditorState();
 }
 
+/// A simple Editor for Epicture
+/// Let you have a look at what you've created
+/// Can save or ditch your picture
 class _PictureEditorState extends State<PictureEditor> {
   bool saved;
 
@@ -23,6 +26,10 @@ class _PictureEditorState extends State<PictureEditor> {
     saved = false;
   }
 
+  /// Build a view with three FAB
+  ///   - A 'go-back' button
+  ///   - A 'save' button
+  ///   - A 'upload' button
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -115,6 +122,7 @@ class _PictureEditorState extends State<PictureEditor> {
     );
   }
 
+  /// Calls the uploader
   void onUploadPressed() {
     Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (BuildContext context) {

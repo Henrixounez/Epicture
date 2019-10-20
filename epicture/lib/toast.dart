@@ -12,6 +12,8 @@ class IosStyleToast extends StatefulWidget {
   _IosStyleToastState createState() => _IosStyleToastState();
 }
 
+/// Toast notifications IOS-like
+/// Use with showOverlay((context, t) {return Opacity(opacity: t, child: IosStyleToast(),);});
 class _IosStyleToastState extends State<IosStyleToast> {
   @override
   Widget build(BuildContext context) {

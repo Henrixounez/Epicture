@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+// A custom route that acts like a slider.
 class SlideLeftRoute extends PageRouteBuilder {
   final Widget page;
 
@@ -25,6 +26,7 @@ class SlideLeftRoute extends PageRouteBuilder {
         );
 }
 
+/// A custom route that acts like a slider when entering and fade when exiting.
 class EnterExitRoute extends PageRouteBuilder {
   final Widget enterPage;
   final Widget exitPage;

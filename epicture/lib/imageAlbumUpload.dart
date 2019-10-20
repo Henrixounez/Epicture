@@ -13,6 +13,7 @@ class ImageAlbumUpload extends StatefulWidget {
   ImageAlbumUploadState createState() => ImageAlbumUploadState();
 }
 
+/// Displays the content to be uploaded with its description.
 class ImageAlbumUploadState extends State<ImageAlbumUpload> {
 
   @override

@@ -3,12 +3,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:folding_cell/folding_cell.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:overlay_support/overlay_support.dart';
 import 'dart:async';
 
 import 'colors.dart';
 import 'uploader.dart';
-import 'toast.dart';
 
 class FoldingCellSimpleDemo extends StatefulWidget {
   bool loading;
@@ -21,12 +19,14 @@ class FoldingCellSimpleDemo extends StatefulWidget {
   FoldingCellSimpleDemoState createState() => FoldingCellSimpleDemoState();
 }
 
+/// A animation class that creates three panels that fold to each other
 class FoldingCellSimpleDemoState extends State<FoldingCellSimpleDemo> {
   final _foldingCellKey = GlobalKey<SimpleFoldingCellState>();
 
   Color colorTile;
   String messageFolded;
 
+  /// Setup the folding animation to open the folder by default
   @override
   void initState() {
     super.initState();
@@ -37,6 +37,9 @@ class FoldingCellSimpleDemoState extends State<FoldingCellSimpleDemo> {
     messageFolded = "${widget.title} is uploaded !";
   }
 
+  /// When the widget is updated, check the parent response and act accordingly
+  /// If content was uploaded, close the folder and setup a quit timer
+  /// If error has occured, changes folder colors, close it and go back to uploader
   @override
   void didUpdateWidget(FoldingCellSimpleDemo oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -55,6 +58,8 @@ class FoldingCellSimpleDemoState extends State<FoldingCellSimpleDemo> {
     }
     _foldingCellKey?.currentState?.toggleFold();
   }
+
+  /// Builds the folder
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -74,6 +79,7 @@ class FoldingCellSimpleDemoState extends State<FoldingCellSimpleDemo> {
     );
   }
 
+  /// Front folder. Its what you see when folder is closed
   Widget _buildFrontWidget() {
     return Container(
         color: colorTile,
@@ -91,6 +97,7 @@ class FoldingCellSimpleDemoState extends State<FoldingCellSimpleDemo> {
         ));
   }
 
+  /// Top folder. Its what you see during loading
   Widget _buildInnerTopWidget() {
     return Container(
         color: colorFavorite,
@@ -104,6 +111,7 @@ class FoldingCellSimpleDemoState extends State<FoldingCellSimpleDemo> {
         ));
   }
 
+  /// Bottom folder. Its where you look at the loading animation
   Widget _buildInnerBottomWidget() {
     return Container(
       color: colorMiddle,
@@ -136,6 +144,7 @@ class FoldingCellSimpleDemoState extends State<FoldingCellSimpleDemo> {
   }
 }
 
+/// Route that defines a fading animation
 class TestRoute extends CupertinoPageRoute {
   TestRoute()
       : super(builder: (BuildContext context) => Test());
@@ -159,6 +168,8 @@ class Test extends StatefulWidget {
   TestState createState() => TestState();
 }
 
+/// Contains the folding animation.
+/// Interface it with it parents and handle the update logic
 class TestState extends State<Test> {
 
   @override
