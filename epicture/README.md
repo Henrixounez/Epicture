@@ -138,7 +138,7 @@ Finally, the camera's bottom-left button let you take a pictures from your galle
 
 #### Uploader
 
-![](https://i.imgur.com/0DNS3Kz.png "The uploader in action")
+![](https://i.imgur.com/drBMrOu.png "The uploader in action")
 
 The uploader menu allows you to upload your image with some parameters.
 
