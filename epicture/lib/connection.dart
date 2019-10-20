@@ -31,8 +31,8 @@ class _ConnectionPageState extends State<ConnectionPage> {
   @override
   void dispose() {
     super.dispose();
-    _sub.cancel();
-
+    if (_sub != null)
+      _sub.cancel();
   }
 
   void initLinks() async {

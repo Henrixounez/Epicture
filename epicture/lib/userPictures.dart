@@ -49,10 +49,12 @@ class _UserPicturesState extends State<UserPictures> {
         headers: {HttpHeaders.authorizationHeader: "Bearer $globalAccessToken"},
       );
       var albumRes = await jsonDecode(res.body)['data'];
-        for (var imageAlbum in albumRes['images']) {
-          pictures.removeWhere((element) => (element['id'] == imageAlbum['id']));
-        }
-        pictures.add(albumRes);
+      if (albumRes['images'] == null)
+        continue;
+      for (var imageAlbum in albumRes['images']) {
+        pictures.removeWhere((element) => (element['id'] == imageAlbum['id']));
+      }
+      pictures.add(albumRes);
     }
     pictures.sort((a, b) => b['datetime'].compareTo(a['datetime']));
     setState(() {

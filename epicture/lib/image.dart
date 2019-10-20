@@ -104,7 +104,7 @@ class _ImgurImageState extends State<ImgurImage> {
           child: Column(
             children: <Widget>[
               InkWell(
-                onTap: () {if (data['is_album']) Navigator.push(context, MaterialPageRoute(builder: (context) => Album(key: ValueKey(data['id']), images: data)));},
+                onTap: () {if (data['is_album'] != null && data['is_album']) Navigator.push(context, MaterialPageRoute(builder: (context) => Album(key: ValueKey(data['id']), images: data)));},
                 child: Container(
                   padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                   child: Column(

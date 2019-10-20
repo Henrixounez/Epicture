@@ -36,7 +36,10 @@ class _AlbumState extends State<Album> {
     );
     if (mounted) {
       setState(() {
-        _comments = jsonDecode(response.body)['data'];
+        if (response.statusCode == 200)
+          _comments = jsonDecode(response.body)['data'];
+        else
+          _comments = [];
       });
     }
   }
@@ -257,7 +260,7 @@ class _AlbumCommentsState extends State<AlbumComments> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Row(
+                  Wrap(
                     children: <Widget>[
                       Text(widget.comments[index]['author'], style: TextStyle(color: colorText, fontSize: 15, fontWeight: FontWeight.bold),),
                       VerticalDivider(),
