@@ -1,0 +1,325 @@
+@startuml
+set namespaceSeparator ::
+
+"epicture::main.dart::MyApp" <|-- "epicture::main.dart::MainPage"
+
+class "epicture::main.dart::MyApp" {
+  +Widget build()
+}
+
+class "epicture::main.dart::MainPage" {
+  +int selectedIndex
+  +Widget build()
+  +void pageChanged()
+  +void bottomTapped()
+}
+
+
+
+"epicture::main.dart::MainPage" <|-- "epicture::home.dart::HomePage"
+"epicture::home.dart::HomePage" <|-- "epicture::home.dart::Drawer"
+
+class "epicture::home.dart::HomePage" {
+  +GlobalKey<ScaffoldState> _scaffoldKey
+  +bool _isConnected
+  +List _images
+  +Future<String> _avatarUrl
+  +void initState()
+  +void findPrefs()
+  +void getMature()
+  +void disconnect()
+  +Future refresh()
+  +Future getAvatar()
+  +Widget build()
+  +Widget foldableTopAppBar()
+  +Widget drawer()
+  +Widget avatarButton()
+}
+
+
+
+"epicture::home.dart::Drawer" <|-- "epicture::favorites.dart::UserFavorites"
+
+class "epicture::favorites.dart::UserFavorites" {
+  +List _pictures
+  +int _page
+  +String _sort
+  +void initState()
+  +Future getPictures()
+  +Widget build()
+}
+
+
+"epicture::home.dart::Drawer" <|-- "epicture::userPictures.dart::UserPictures"
+
+class "epicture::userPictures.dart::UserPictures" {
+  -List _pictures
+  +void initState()
+  +Future getPictures()
+  +Widget build()
+}
+
+
+
+"epicture::home.dart::HomePage" <|-- "epicture::connection.dart::ConnectionPage"
+
+class "epicture::connection.dart::ConnectionPage" {
+  -dynamic parent
+  {static} +String url
+  +StreamSubscription _sub
+  +void initState()
+  +void dispose()
+  +void initLinks()
+  +Future getLink()
+  +Future initUniLinks()
+  +Widget build()
+}
+
+
+
+"epicture::main.dart::MainPage" <|-- "epicture::search.dart::SearchPage"
+
+class "epicture::search.dart::SearchPage" {
+  +FocusNode _focusNode
+  +ScrollController _scrollController
+  +double _timeOpacity
+  +List _images
+  +List _tags
+  +List<String> _values
+  +List<String> _lastSearch
+  +void initState()
+  +Widget build()
+  +Widget appBarSearch()
+  +Widget tagsList()
+  +Widget sortingMenu()
+  +Widget dropdown()
+  +Widget tagCard()
+  +Future search()
+  +Future getTags()
+}
+
+
+
+"epicture::main.dart::MainPage" <|-- "epicture::camera.dart::CameraExampleHome"
+"epicture::camera.dart::CameraExampleHome" <|-- "epicture::editor.dart::PictureEditor"
+"epicture::camera.dart::CameraExampleHome" <|-- "epicture::uploader.dart::UploaderFlutter"
+
+
+class "epicture::camera.dart::CameraExampleHome" {
+  +CameraController controller
+  +CameraDescription actualCamera
+  +CameraDescription frontCamera
+  +CameraDescription backCamera
+  +String imagePath
+  +String oldImagePath
+  +String videoPath
+  +void Function() videoPlayerListener
+  +bool enableAudio
+  +GlobalKey<ScaffoldState> _scaffoldKey
+  +void initState()
+  +void dispose()
+  +void didChangeAppLifecycleState()
+  +Widget build()
+  -Widget _cameraPreviewWidget()
+  +String timestamp()
+  +void showInSnackBar()
+  +void onNewCameraSelected()
+  +void onTakePictureButtonPressed()
+  +void onCameraSwitchButtonPressed()
+  +Future getImage()
+  +void onGalleryButtonPressed()
+  +void onPictureTaken()
+  +Future takePicture()
+  -void _showCameraException()
+  +dynamic updateOldImagePath()
+  +void onUploadPressed()
+}
+
+
+"epicture::home.dart::HomePage" <|-- "epicture::pictureList.dart::PictureList"
+"epicture::search.dart::SearchPage" <|-- "epicture::pictureList.dart::PictureList"
+"epicture::favorites.dart::UserFavorites" <|-- "epicture::pictureList.dart::PictureList"
+"epicture::userPictures.dart::UserPictures" <|-- "epicture::pictureList.dart::PictureList"
+
+class "epicture::pictureList.dart::PictureList" {
+  +dynamic pictures
+  +Widget build()
+}
+
+
+"epicture::pictureList.dart::PictureList" <|-- "epicture::image.dart::ImgurImage"
+"epicture::image.dart::ImgurImage" <|-- "epicture::image.dart::ImageLoader"
+"epicture::image.dart::ImageLoader" <|-- "epicture::image.dart::MyVideoPlayer"
+"epicture::image.dart::BigPicture" <|-- "epicture::image.dart::ImageLoader"
+"epicture::image.dart::ImgurImage" <|-- "epicture::image.dart::BigPicture"
+
+class "epicture::image.dart::ImgurImage" {
+  -dynamic data
+  +Map data
+  +Future<String> avatarUrl
+  +bool gotAvatar
+  +bool isInit
+  +void initState()
+  +void getData()
+  +Widget build()
+  +Widget header()
+  +Widget image()
+  +Widget footer()
+  +void favImage()
+  +void vote()
+  +String getTitle()
+  +Future getAvatar()
+  +String getSection()
+  +String getAlbum()
+  +Widget metricButton()
+  +Widget metric()
+}
+
+
+class "epicture::image.dart::ImageLoader" {
+  -dynamic data
+  -int index
+  +Future<String> imgUrl
+  +VideoPlayerController _videoController
+  +bool _videoLoaded
+  +Map data
+  +bool isInit
+  +void initState()
+  +void dispose()
+  +Widget build()
+  +Widget imageBuilder()
+  +double findNeededHeight()
+  +Future getImg()
+}
+
+class "epicture::image.dart::MyVideoPlayer" {
+  -VideoPlayerController controller
+  -double height
+  +bool displayButtons
+  +bool paused
+  +bool sound
+  +Widget build()
+  +void soundButton()
+  +void playButton()
+}
+
+
+class "epicture::image.dart::BigPicture" {
+  -dynamic data
+  +Widget build()
+}
+
+
+
+"epicture::album.dart::Album" --|> "epicture::image.dart::ImgurImage"
+"epicture::album.dart::Album" <|-- "epicture::album.dart::AlbumPicture"
+"epicture::image.dart::ImageLoader" --|> "epicture::album.dart::AlbumPicture"
+"epicture::album.dart::Album" <|-- "epicture::album.dart::AlbumComments"
+
+class "epicture::album.dart::Album" {
+  -dynamic images
+  +ScrollController _scrollController
+  +List _comments
+  +void initState()
+  +void getComments()
+  +void vote()
+  +void favImage()
+  +Widget build()
+  +Widget tagCard()
+}
+
+class "epicture::album.dart::AlbumPicture" {
+  -dynamic data
+  +Map _data
+  +void initState()
+  +void fetchData()
+  +Widget build()
+}
+
+class "epicture::album.dart::AlbumComments" {
+  -dynamic comments
+  -dynamic depth
+  +List<bool> showChildren
+  +void initState()
+  +Widget build()
+  +Widget header()
+  +Widget children()
+  +Widget showButton()
+}
+
+
+
+"epicture::editor.dart::PictureEditor" <|-- "epicture::uploader.dart::UploaderFlutter"
+
+class "epicture::editor.dart::PictureEditor" {
+  -Function updateParent
+  -String imagePath
+  +bool saved
+  -_PictureEditorState createState()
+  +void initState()
+  +Widget build()
+  +void onUploadPressed()
+}
+
+
+"epicture::uploader.dart::UploaderFlutter" <|-- "epicture::imageAlbumUpload.dart::ImageAlbumUpload"
+
+class "epicture::uploader.dart::UploaderFlutter" {
+  -String imagePath
+  +TextEditingController _tecTitle
+  +SnackBar snack
+  +GlobalKey<ScaffoldState> _scaffoldKey
+  +List<ImageAlbumUpload> imagesAlbum
+  +Widget _appBatTitle
+  +bool loading
+  +int responseUpload
+  +void initState()
+  +Widget build()
+  -Future _imageUpload()
+  -void _soloImageUpload()
+  -void _onAlbumUpload()
+  -void _onfabUploadPressed()
+  +Future getImage()
+}
+
+class "epicture::uploader.dart::UploaderFAB" {
+  +String imagePath
+  +Color backgroundColor
+  +Icon fabIcon
+  +Widget build()
+}
+
+
+"epicture::uploader.dart::UploaderFlutter" <|-- "epicture::fold.dart::Test"
+"epicture::fold.dart::Test" <|-- "epicture::fold.dart::FoldingCellSimpleDemo"
+
+class "epicture::fold.dart::Test" {
+  -UploadFlutterState parent
+  -String title
+  +Widget build()
+}
+
+class "epicture::fold.dart::FoldingCellSimpleDemo" {
+  -bool loading
+  -int response
+  -String title
+  +GlobalKey<SimpleFoldingCellState> _foldingCellKey
+  +Color colorTile
+  +String messageFolded
+  +void initState()
+  +void didUpdateWidget()
+  +Widget build()
+  -Widget _buildFrontWidget()
+  -Widget _buildInnerTopWidget()
+  -Widget _buildInnerBottomWidget()
+}
+
+class "epicture::imageAlbumUpload.dart::ImageAlbumUpload" {
+  -String imagePath
+  -TextEditingController tecDescription
+  +void dispose()
+  +Widget build()
+}
+
+
+@enduml
