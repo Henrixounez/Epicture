@@ -2,6 +2,7 @@
 
 ![](./assets/launcher/small_icon.png)
 
+Made with <3 by [Skaas](https://github.com/Skaas) and [Henrixounez](https://github.com/Henrixounez)
 
 Epicture is a mobile interface for Imgur.
 It was made with Flutter and uses Imgur official API.
