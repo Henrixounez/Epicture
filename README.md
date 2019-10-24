@@ -155,4 +155,4 @@ When you are ready, you can press the bottom-right button to upload your content
 
 ## Technical informations
 
-You may find the application structure [here]()
+You can build the doc thanks to [dartdoc](https://pub.dev/packages/dartdoc)
